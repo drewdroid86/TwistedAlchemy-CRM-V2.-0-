@@ -76,6 +76,8 @@ export default function Purchasing() {
           date: extractedData.date || new Date().toISOString().split('T')[0],
           total_amount: extractedData.total_amount || 0,
           items: extractedData.items || [],
+          notes: extractedData.notes || '',
+          brand: extractedData.brand || 'Twisted Twig',
           status: 'Received'
         });
         setIsModalOpen(true);
@@ -99,12 +101,12 @@ export default function Purchasing() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-serif italic font-bold text-stone-900">Purchasing & Receipts</h2>
-          <p className="text-stone-500 mt-1">Track shop expenses and intake receipts.</p>
+          <h2 className="text-3xl font-serif italic font-bold text-slate-900">Purchasing & Receipts</h2>
+          <p className="text-slate-600 mt-1">Track shop expenses and intake receipts.</p>
         </div>
         
         <div className="flex items-center gap-3">
-          <label className="flex items-center gap-2 bg-stone-100 text-stone-900 px-6 py-3 rounded-2xl font-bold hover:bg-stone-200 transition-all cursor-pointer shadow-sm">
+          <label className="flex items-center gap-2 bg-slate-100 text-slate-900 px-6 py-3 rounded-2xl font-bold hover:bg-slate-200 transition-all cursor-pointer shadow-sm">
             {isProcessing ? <Loader2 className="animate-spin" size={20} /> : <Camera size={20} />}
             <span>{isProcessing ? 'Processing...' : 'Snap Receipt'}</span>
             <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileUpload} disabled={isProcessing} />
@@ -112,7 +114,7 @@ export default function Purchasing() {
           
           <button 
             onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 bg-olive-accent text-white px-6 py-3 rounded-2xl font-bold hover:opacity-90 transition-all shadow-lg"
+            className="flex items-center gap-2 bg-accent text-white px-6 py-3 rounded-2xl font-bold hover:opacity-90 transition-all shadow-lg"
           >
             <Plus size={20} /> New PO
           </button>
@@ -122,11 +124,11 @@ export default function Purchasing() {
       {/* Search & Stats */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="lg:col-span-3 relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={20} />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={20} />
           <input
             type="text"
             placeholder="Search by vendor or brand..."
-            className="w-full pl-12 pr-4 py-4 bg-white border border-stone-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-stone-900/10 transition-all shadow-sm"
+            className="w-full pl-12 pr-4 py-4 bg-white border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-900/10 transition-all shadow-sm"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -148,7 +150,7 @@ export default function Purchasing() {
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
-              <tr className="bg-stone-50 border-b border-stone-100">
+              <tr className="bg-slate-50 border-b border-slate-100">
                 <th className="px-6 py-4 text-[10px] font-bold text-stone-400 uppercase tracking-widest">Date</th>
                 <th className="px-6 py-4 text-[10px] font-bold text-stone-400 uppercase tracking-widest">Vendor</th>
                 <th className="px-6 py-4 text-[10px] font-bold text-stone-400 uppercase tracking-widest">Brand</th>
@@ -160,7 +162,7 @@ export default function Purchasing() {
             <tbody className="divide-y divide-stone-50">
               {filteredPOs.map((po) => (
                 <tr key={po.id} className="hover:bg-stone-50/50 transition-colors group">
-                  <td className="px-6 py-4 text-sm text-stone-600 font-medium">
+                  <td className="px-6 py-4 text-sm text-slate-700 font-medium">
                     {new Date(po.date).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4">

@@ -108,19 +108,19 @@ export default function Reports() {
       {/* Header */}
       <div className="flex justify-between items-center print:hidden">
         <div>
-          <h2 className="text-3xl font-serif italic font-bold text-stone-900">Business Intelligence</h2>
-          <p className="text-stone-500 mt-1">Detailed reports for WGA & Twisted Twig.</p>
+          <h2 className="text-3xl font-serif italic font-bold text-slate-900">Business Intelligence</h2>
+          <p className="text-slate-600 mt-1">Detailed reports for WGA & Twisted Twig.</p>
         </div>
         <div className="flex gap-3">
           <button 
             onClick={() => downloadCSV(salesData, 'sales_report.csv')}
-            className="flex items-center gap-2 bg-white border border-stone-200 text-stone-900 px-6 py-3 rounded-2xl font-bold hover:bg-stone-50 transition-all shadow-sm"
+            className="flex items-center gap-2 bg-white border border-slate-200 text-slate-900 px-6 py-3 rounded-2xl font-bold hover:bg-slate-50 transition-all shadow-sm"
           >
             <Download size={20} /> Digital Export
           </button>
           <button 
             onClick={handlePrint}
-            className="flex items-center gap-2 bg-olive-accent text-white px-6 py-3 rounded-2xl font-bold hover:opacity-90 transition-all shadow-lg"
+            className="flex items-center gap-2 bg-accent text-white px-6 py-3 rounded-2xl font-bold hover:opacity-90 transition-all shadow-lg"
           >
             <Printer size={20} /> Print Report
           </button>
@@ -128,7 +128,7 @@ export default function Reports() {
       </div>
 
       {/* Report Navigation */}
-      <div className="flex gap-4 border-b border-stone-200 print:hidden">
+      <div className="flex gap-4 border-b border-slate-200 print:hidden">
         {[
           { id: 'loanOfficer', label: 'Loan Officer Summary', icon: FileText },
           { id: 'sales', label: 'Sales & Profit', icon: TrendingUp },
@@ -140,7 +140,7 @@ export default function Reports() {
             key={tab.id}
             onClick={() => setActiveReport(tab.id as any)}
             className={`flex items-center gap-2 px-6 py-4 font-bold text-sm transition-all relative ${
-              activeReport === tab.id ? 'text-stone-900' : 'text-stone-400 hover:text-stone-600'
+              activeReport === tab.id ? 'text-stone-900' : 'text-slate-500 hover:text-slate-700'
             }`}
           >
             <tab.icon size={18} />
@@ -210,7 +210,7 @@ export default function Reports() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-sm">
                     <thead>
-                      <tr className="border-b border-stone-100">
+                      <tr className="border-b border-slate-100">
                         <th className="pb-4 font-bold text-stone-400 uppercase tracking-wider text-[10px]">Project</th>
                         <th className="pb-4 font-bold text-stone-400 uppercase tracking-wider text-[10px]">Brand</th>
                         <th className="pb-4 font-bold text-stone-400 uppercase tracking-wider text-[10px]">Revenue</th>
@@ -278,11 +278,11 @@ export default function Reports() {
                         <span className="font-bold text-stone-900">{brand.name}</span>
                         <span className="text-stone-500">{brand.count} Items</span>
                       </div>
-                      <div className="w-full h-3 bg-stone-100 rounded-full overflow-hidden">
+                      <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
                         <motion.div 
                           initial={{ width: 0 }}
                           animate={{ width: `${Math.min(100, (brand.value / 10000) * 100)}%` }}
-                          className={`h-full ${i === 0 ? 'bg-stone-900' : 'bg-olive-accent'}`}
+                          className={`h-full ${i === 0 ? 'bg-slate-900' : 'bg-olive-accent'}`}
                         />
                       </div>
                       <p className="text-right text-[10px] font-bold text-stone-400 uppercase">
