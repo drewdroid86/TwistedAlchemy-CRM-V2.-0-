@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../firebase';
-import { Camera, Upload, Loader2, X } from 'lucide-react';
+import { Camera, Loader2 } from 'lucide-react';
 
 interface ImageUploadProps {
   onUpload: (url: string) => void;
