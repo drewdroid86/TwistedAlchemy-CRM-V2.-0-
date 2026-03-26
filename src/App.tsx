@@ -61,11 +61,11 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-warm-bg">
+      <div className="min-h-screen flex items-center justify-center bg-app-bg">
         <motion.div 
           animate={{ rotate: 360 }}
           transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-          className="w-12 h-12 border-4 border-stone-200 border-t-olive-accent rounded-full"
+          className="w-12 h-12 border-4 border-border border-t-accent rounded-full"
         />
       </div>
     );
@@ -73,22 +73,22 @@ export default function App() {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-warm-bg p-4">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-app-bg p-4">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="max-w-md w-full bg-white rounded-[32px] shadow-2xl p-12 text-center border border-stone-100"
+          className="max-w-md w-full bg-card-bg rounded-xl shadow-sm p-12 text-center border border-border"
         >
-          <div className="w-20 h-20 bg-olive-accent rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-lg">
-            <Hammer className="text-white w-10 h-10" />
+          <div className="w-16 h-16 bg-accent rounded-lg flex items-center justify-center mx-auto mb-8 shadow-sm">
+            <Hammer className="text-white w-8 h-8" />
           </div>
-          <h1 className="text-4xl font-serif italic text-stone-900 mb-4">Twisted Alchemy CRM</h1>
-          <p className="text-stone-500 mb-10 leading-relaxed">
-            Twisted Twig & Wood Grain Alchemist Management System
+          <h1 className="text-3xl font-bold text-text-primary mb-2">Twisted Alchemy CRM</h1>
+          <p className="text-text-secondary mb-8">
+            Management System
           </p>
           <button
             onClick={handleLogin}
-            className="w-full flex items-center justify-center gap-3 py-4 bg-olive-accent text-white rounded-2xl font-semibold hover:opacity-90 transition-all shadow-lg hover:shadow-xl active:scale-[0.98]"
+            className="w-full flex items-center justify-center gap-3 py-3 bg-accent text-white rounded-lg font-medium hover:bg-blue-700 transition-all shadow-sm"
           >
             <LogIn size={20} />
             Sign in with Google
@@ -110,11 +110,11 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-      <div className="min-h-screen bg-warm-bg flex">
+      <div className="min-h-screen bg-app-bg flex">
         {/* Sidebar */}
         <aside 
-          className={`bg-dark-olive transition-all duration-300 flex flex-col shadow-2xl z-20 ${
-            isSidebarOpen ? 'w-72' : 'w-20'
+          className={`bg-white border-r border-border transition-all duration-300 flex flex-col z-20 ${
+            isSidebarOpen ? 'w-64' : 'w-20'
           }`}
         >
           <div className="p-6 flex items-center justify-between">
@@ -124,43 +124,43 @@ export default function App() {
                 animate={{ opacity: 1 }}
                 className="flex items-center gap-3"
               >
-                <div className="w-8 h-8 bg-olive-accent rounded-lg flex items-center justify-center">
+                <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
                   <Hammer size={16} className="text-white" />
                 </div>
-                <span className="font-serif italic font-bold text-white">Twisted Alchemy</span>
+                <span className="font-bold text-text-primary">Twisted Alchemy</span>
               </motion.div>
             )}
             <button 
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="p-2 hover:bg-white/5 rounded-lg text-stone-400 transition-colors"
+              className="p-2 hover:bg-app-bg rounded-lg text-text-secondary transition-colors"
             >
               {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
           </div>
 
-          <nav className="flex-1 px-4 space-y-2 mt-4">
+          <nav className="flex-1 px-4 space-y-1 mt-4">
             {navItems.map((item) => (
               <button
                 key={item.id}
                 onClick={() => setActiveView(item.id as View)}
-                className={`w-full flex items-center gap-4 p-3 rounded-xl transition-all ${
+                className={`w-full flex items-center gap-3 p-3 rounded-lg transition-all ${
                   activeView === item.id 
-                    ? 'bg-olive-accent text-white shadow-lg' 
-                    : 'text-stone-400 hover:bg-white/5 hover:text-white'
+                    ? 'bg-blue-50 text-accent' 
+                    : 'text-text-secondary hover:bg-app-bg hover:text-text-primary'
                 }`}
               >
-                <item.icon size={22} />
+                <item.icon size={20} />
                 {isSidebarOpen && <span className="font-medium">{item.label}</span>}
               </button>
             ))}
           </nav>
 
-          <div className="p-4 mt-auto border-t border-white/5">
+          <div className="p-4 mt-auto border-t border-border">
             <button
               onClick={handleLogout}
-              className={`w-full flex items-center gap-4 p-3 rounded-xl text-stone-400 hover:bg-white/5 hover:text-white transition-all`}
+              className={`w-full flex items-center gap-3 p-3 rounded-lg text-text-secondary hover:bg-app-bg hover:text-text-primary transition-all`}
             >
-              <LogOut size={22} />
+              <LogOut size={20} />
               {isSidebarOpen && <span className="font-medium">Logout</span>}
             </button>
           </div>
@@ -168,19 +168,18 @@ export default function App() {
 
         {/* Main Content */}
         <main className="flex-1 overflow-auto">
-          <header className="h-20 bg-white/80 backdrop-blur-md border-b border-stone-200 flex items-center justify-between px-8 sticky top-0 z-10">
-            <h2 className="text-2xl font-serif italic text-stone-900 capitalize">
+          <header className="h-16 bg-white border-b border-border flex items-center justify-between px-8 sticky top-0 z-10">
+            <h2 className="text-lg font-semibold text-text-primary capitalize">
               {activeView}
             </h2>
             <div className="flex items-center gap-4">
               <div className="text-right hidden sm:block">
-                <p className="text-sm font-semibold text-stone-900">{user.displayName}</p>
-                <p className="text-xs text-stone-500">{user.email}</p>
+                <p className="text-sm font-medium text-text-primary">{user.displayName}</p>
               </div>
               <img 
                 src={user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName}`} 
                 alt="Profile" 
-                className="w-10 h-10 rounded-full border border-stone-200"
+                className="w-8 h-8 rounded-full border border-border"
                 referrerPolicy="no-referrer"
               />
             </div>

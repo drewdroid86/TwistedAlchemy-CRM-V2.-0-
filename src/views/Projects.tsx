@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { subscribeToCollection, createDocument, updateDocument } from '../services/firebaseService';
+import { subscribeToCollection, createDocument, updateDocument, updateArrayField } from '../services/firebaseService';
 import { Project, Brand, Customer, PricingStrategy, InventoryItem } from '../types';
 import { Plus, Search, Filter, Hammer, Clock, CheckCircle2, AlertCircle, DollarSign, ChevronRight, X, Calculator, Camera, Image as ImageIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -25,6 +25,12 @@ export default function Projects() {
   const [isHistoricalModalOpen, setIsHistoricalModalOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [showCalculator, setShowCalculator] = useState(false);
+  const [toast, setToast] = useState<{message: string, type: 'error' | 'success'} | null>(null);
+  
+  const showToast = (message: string, type: 'error' | 'success' = 'error') => {
+    setToast({message, type});
+    setTimeout(() => setToast(null), 3000);
+  };
   
   const [newProject, setNewProject] = useState<Partial<Project>>({
     brand: 'Twisted Twig',
@@ -112,20 +118,24 @@ export default function Projects() {
   };
 
   const addProjectImage = async (id: string, url: string) => {
-    const currentImages = selectedProject?.images || [];
-    const newImages = [...currentImages, url];
-    await updateDocument('projects', id, { images: newImages });
-    if (selectedProject?.id === id) {
-      setSelectedProject({ ...selectedProject, images: newImages });
+    try {
+      await updateArrayField('projects', id, 'images', url, 'add');
+      if (selectedProject?.id === id) {
+        setSelectedProject({ ...selectedProject, images: [...(selectedProject.images || []), url] });
+      }
+    } catch (e) {
+      showToast('Failed to add image.');
     }
   };
 
   const removeProjectImage = async (id: string, url: string) => {
-    const currentImages = selectedProject?.images || [];
-    const newImages = currentImages.filter(img => img !== url);
-    await updateDocument('projects', id, { images: newImages });
-    if (selectedProject?.id === id) {
-      setSelectedProject({ ...selectedProject, images: newImages });
+    try {
+      await updateArrayField('projects', id, 'images', url, 'remove');
+      if (selectedProject?.id === id) {
+        setSelectedProject({ ...selectedProject, images: selectedProject.images?.filter(img => img !== url) || [] });
+      }
+    } catch (e) {
+      showToast('Failed to remove image.');
     }
   };
 
@@ -142,18 +152,32 @@ export default function Projects() {
 
   return (
     <div className="space-y-6">
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div 
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            className={`fixed bottom-4 right-4 p-4 rounded-xl shadow-lg z-[60] ${toast.type === 'error' ? 'bg-red-500 text-white' : 'bg-emerald-500 text-white'}`}
+          >
+            {toast.message}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="flex justify-between items-center">
-        <h3 className="text-xl font-serif italic font-bold text-stone-900">Active Work Orders</h3>
+        <h3 className="text-xl font-semibold text-text-primary">Active Work Orders</h3>
         <div className="flex gap-2">
           <button
             onClick={() => setIsHistoricalModalOpen(true)}
-            className="flex items-center gap-2 bg-stone-100 text-stone-900 px-4 py-2 rounded-xl text-sm font-semibold hover:bg-stone-200 transition-all"
+            className="flex items-center gap-2 bg-app-bg text-text-primary px-4 py-2 rounded-lg text-sm font-medium hover:bg-border transition-all"
           >
             Log Historical Sale
           </button>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 bg-olive-accent text-white px-4 py-2 rounded-xl text-sm font-semibold hover:opacity-90 transition-all shadow-md"
+            className="flex items-center gap-2 bg-accent text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-all shadow-sm"
           >
             <Plus size={18} /> New Project
           </button>
@@ -167,8 +191,8 @@ export default function Projects() {
           return (
             <div key={status} className="flex-none w-80 snap-start flex flex-col h-[calc(100vh-200px)]">
               <div className="flex items-center justify-between mb-4">
-                <h4 className="font-bold text-stone-900">{status}</h4>
-                <span className="bg-stone-200 text-stone-600 text-xs font-bold px-2 py-1 rounded-full">
+                <h4 className="font-semibold text-text-primary">{status}</h4>
+                <span className="bg-border text-text-secondary text-xs font-medium px-2 py-1 rounded-full">
                   {columnProjects.length}
                 </span>
               </div>

@@ -53,18 +53,18 @@ export default function Inventory() {
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center card-refined p-4">
         <div className="relative flex-1 w-full">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" size={18} />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary" size={18} />
           <input
             type="text"
             placeholder="Search inventory..."
-            className="w-full pl-10 pr-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-stone-900/10 transition-all"
+            className="w-full pl-10 pr-4 py-2 bg-app-bg border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent/20 transition-all"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
         <div className="flex gap-3 w-full sm:w-auto">
           <select
-            className="bg-stone-50 border border-stone-200 rounded-xl px-4 py-2 text-sm focus:outline-none"
+            className="bg-app-bg border border-border rounded-lg px-4 py-2 text-sm focus:outline-none"
             value={filterBrand}
             onChange={(e) => setFilterBrand(e.target.value as Brand | 'All')}
           >
@@ -74,7 +74,7 @@ export default function Inventory() {
           </select>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 bg-olive-accent text-white px-4 py-2 rounded-xl text-sm font-semibold hover:opacity-90 transition-all"
+            className="btn-primary flex items-center gap-2"
           >
             <Plus size={18} /> Add Item
           </button>

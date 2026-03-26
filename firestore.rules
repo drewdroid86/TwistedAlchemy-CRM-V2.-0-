@@ -82,17 +82,17 @@ service cloud.firestore {
 
     // Projects
     match /projects/{projectId} {
-      allow read: if isAuthenticated();
+      allow read: if isAuthenticated() && (isAdmin() || request.auth.uid == resource.data.ownerId || !('ownerId' in resource.data));
       allow create: if isAuthenticated() && isValidProject(request.resource.data);
-      allow update: if isAuthenticated() && isValidProject(request.resource.data);
+      allow update: if isAuthenticated() && (isAdmin() || request.auth.uid == resource.data.ownerId || !('ownerId' in resource.data)) && isValidProject(request.resource.data);
       allow delete: if isAdmin();
     }
 
     // Customers
     match /customers/{customerId} {
-      allow read: if isAuthenticated();
+      allow read: if isAuthenticated() && (isAdmin() || request.auth.uid == resource.data.ownerId || !('ownerId' in resource.data));
       allow create: if isAuthenticated() && isValidCustomer(request.resource.data);
-      allow update: if isAuthenticated() && isValidCustomer(request.resource.data);
+      allow update: if isAuthenticated() && (isAdmin() || request.auth.uid == resource.data.ownerId || !('ownerId' in resource.data)) && isValidCustomer(request.resource.data);
       allow delete: if isAdmin();
     }
 

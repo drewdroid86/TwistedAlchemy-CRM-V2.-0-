@@ -45,9 +45,9 @@ export default function Dashboard() {
   const lowStock = inventory.filter(i => i.quantity < 5);
 
   const stats = [
-    { label: 'Active Projects', value: activeProjects.length, icon: Hammer, color: 'bg-stone-100 text-stone-600' },
-    { label: 'WIP Value', value: `$${totalWIPValue.toLocaleString()}`, icon: TrendingUp, color: 'bg-olive-accent/10 text-olive-accent' },
-    { label: 'Total Revenue', value: `$${totalRevenue.toLocaleString()}`, icon: DollarSign, color: 'bg-stone-100 text-stone-600' },
+    { label: 'Active Projects', value: activeProjects.length, icon: Hammer, color: 'bg-app-bg text-text-secondary' },
+    { label: 'WIP Value', value: `$${totalWIPValue.toLocaleString()}`, icon: TrendingUp, color: 'bg-blue-50 text-accent' },
+    { label: 'Total Revenue', value: `$${totalRevenue.toLocaleString()}`, icon: DollarSign, color: 'bg-app-bg text-text-secondary' },
     { label: 'Low Stock Items', value: lowStock.length, icon: AlertCircle, color: 'bg-red-50 text-red-600' },
   ];
 

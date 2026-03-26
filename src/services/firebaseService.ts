@@ -15,7 +15,9 @@ import {
   getDocs,
   Timestamp,
   DocumentData,
-  QueryConstraint
+  QueryConstraint,
+  arrayUnion,
+  arrayRemove
 } from 'firebase/firestore';
 import { db } from '../firebase';
 
@@ -92,5 +94,17 @@ export const deleteDocument = async (path: string, id: string) => {
     await deleteDoc(doc(db, path, id));
   } catch (error) {
     handleFirestoreError(error, OperationType.DELETE, `${path}/${id}`);
+  }
+};
+
+export const updateArrayField = async (path: string, id: string, field: string, value: any, action: 'add' | 'remove') => {
+  try {
+    const docRef = doc(db, path, id);
+    await updateDoc(docRef, {
+      [field]: action === 'add' ? arrayUnion(value) : arrayRemove(value),
+      updatedAt: new Date().toISOString()
+    });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, `${path}/${id}`);
   }
 };
