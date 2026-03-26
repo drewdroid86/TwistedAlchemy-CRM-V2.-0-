@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { subscribeToCollection, createDocument, updateDocument, updateArrayField } from '../services/firebaseService';
 import { Project, Brand, Customer, PricingStrategy, InventoryItem } from '../types';
-import { Plus, Search, Filter, Hammer, Clock, CheckCircle2, AlertCircle, DollarSign, ChevronRight, X, Calculator, Camera, Image as ImageIcon } from 'lucide-react';
+import { Plus, Clock, CheckCircle2, ChevronRight, X, Calculator, Image as ImageIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import Invoice from '../components/Invoice';
 import ImageUpload from '../components/ImageUpload';
