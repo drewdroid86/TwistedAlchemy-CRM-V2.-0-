@@ -46,7 +46,7 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
     operationType,
     path
   };
-  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  console.error(`Firestore Error [${operationType}]: An error occurred while accessing the database.`);
   throw new Error(JSON.stringify(errInfo));
 }
 
