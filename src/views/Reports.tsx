@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { subscribeToCollection } from '../services/firebaseService';
 import { Project, InventoryItem, Customer, Brand } from '../types';
 import { 
@@ -75,17 +75,26 @@ export default function Reports() {
   const projectStatusData = Object.entries(statusCounts).map(([name, value]) => ({ name, value }));
 
   // 4. Customer Spend Data
-  const customerSpend = projects.reduce((acc: any, p) => {
-    if (!p.client_id) return acc;
-    const customer = customers.find(c => c.id === p.client_id);
-    const name = customer?.name || 'Unknown';
-    acc[name] = (acc[name] || 0) + (p.financials.actual_sale_price || 0);
-    return acc;
-  }, {});
-  const customerData = Object.entries(customerSpend)
-    .map(([name, spend]) => ({ name, spend: spend as number }))
-    .sort((a, b) => b.spend - a.spend)
-    .slice(0, 5);
+  const customerData = useMemo(() => {
+    const customerMap = new Map();
+    for (const customer of customers) {
+      if (customer.id) {
+        customerMap.set(customer.id, customer.name);
+      }
+    }
+
+    const customerSpend = projects.reduce((acc: any, p) => {
+      if (!p.client_id) return acc;
+      const name = customerMap.get(p.client_id) || 'Unknown';
+      acc[name] = (acc[name] || 0) + (p.financials.actual_sale_price || 0);
+      return acc;
+    }, {});
+
+    return Object.entries(customerSpend)
+      .map(([name, spend]) => ({ name, spend: spend as number }))
+      .sort((a, b) => b.spend - a.spend)
+      .slice(0, 5);
+  }, [projects, customers]);
 
   const handlePrint = () => {
     window.print();
