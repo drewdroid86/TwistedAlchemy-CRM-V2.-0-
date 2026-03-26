@@ -85,11 +85,11 @@ const TUTORIAL_SECTIONS = [
     tips: ['Link projects to customers to build their purchase history.', 'Keep contact details handy for delivery coordination.']
   },
   {
-    id: 'reports',
-    title: 'Reports: Business Intelligence',
+    id: 'financials',
+    title: 'Financials: Business Intelligence',
     icon: FileText,
-    content: 'Digital and physical reports for your business reviews. Track profit margins, monthly revenue, and inventory health.',
-    tips: ['Use "Digital Export" to save data for your accountant.', 'Use "Print Report" for your physical monthly review meetings.']
+    content: 'Digital and physical financial reports for your business reviews. Track profit margins, monthly revenue, and inventory health via the Loan Officer Summary, Profit & Loss, and Balance Sheet.',
+    tips: ['Use "Export CSV" to save data for your accountant.', 'Use "Print Report" for your physical monthly review meetings.']
   }
 ];
 
@@ -122,7 +122,7 @@ You have deep knowledge of:
 - Pricing strategy for artisan furniture: cost-plus, value-based, competitive market rates
 - Sourcing: thrift stores, estate sales, Facebook Marketplace, lumber yards
 - Small business operations: cash flow, loan prep, inventory tracking, job costing
-- The CRM system itself: Projects (Intake → Assessment → Structural Repair → Finishing → Complete), Inventory (Raw Materials, Furniture Pieces, Supplies), Purchase Orders, Customers, and Reports
+- The CRM system itself: Projects (Intake → Assessment → Structural Repair → Finishing → Complete), Inventory (Raw Materials, Furniture Pieces, Supplies), Purchase Orders, Customers, and Financials
 
 When answering:
 - Be practical and direct — this is a working shop, not a hobbyist setting
