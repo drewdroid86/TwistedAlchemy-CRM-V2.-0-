@@ -67,19 +67,25 @@ export default function Purchasing() {
     try {
       const reader = new FileReader();
       reader.onloadend = async () => {
-        const base64String = (reader.result as string).split(',')[1];
-        const extractedData = await processReceiptImage(base64String);
-        
-        setNewPO({
-          ...newPO,
-          vendor: extractedData.vendor || '',
-          date: extractedData.date || new Date().toISOString().split('T')[0],
-          total_amount: extractedData.total_amount || 0,
-          items: extractedData.items || [],
-          status: 'Received'
-        });
-        setIsModalOpen(true);
-        setIsProcessing(false);
+        try {
+          const base64String = (reader.result as string).split(',')[1];
+          const extractedData = await processReceiptImage(base64String);
+
+          setNewPO({
+            ...newPO,
+            vendor: extractedData.vendor || '',
+            date: extractedData.date || new Date().toISOString().split('T')[0],
+            total_amount: extractedData.total_amount || 0,
+            items: extractedData.items || [],
+            status: 'Received'
+          });
+          setIsModalOpen(true);
+          setIsProcessing(false);
+        } catch (error) {
+          console.error('Error processing receipt:', error);
+          setIsProcessing(false);
+          alert('Failed to process receipt. Please enter details manually.');
+        }
       };
       reader.readAsDataURL(file);
     } catch (error) {
