@@ -44,7 +44,7 @@ export default function ImageUpload({ onUpload, label = "Upload Photo", classNam
         type="button"
         onClick={() => fileInputRef.current?.click()}
         disabled={uploading}
-        className="flex items-center gap-2 px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-xl transition-all text-sm font-medium disabled:opacity-50"
+        className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-all text-sm font-medium disabled:opacity-50"
       >
         {uploading ? (
           <Loader2 className="w-4 h-4 animate-spin" />
