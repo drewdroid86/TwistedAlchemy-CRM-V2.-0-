@@ -26,13 +26,13 @@ export default function Financials() {
 
   // Historical Data Entry State
   const [saleDate, setSaleDate] = useState(new Date().toISOString().split('T')[0]);
-  const [saleBrand, setSaleBrand] = useState<Brand>('WGA');
+  const [saleBrand, setSaleBrand] = useState<Brand>('Wood Grain Alchemist');
   const [saleRevenue, setSaleRevenue] = useState('');
   const [saleCOGS, setSaleCOGS] = useState('');
   const [saleName, setSaleName] = useState('');
 
   const [expenseDate, setExpenseDate] = useState(new Date().toISOString().split('T')[0]);
-  const [expenseBrand, setExpenseBrand] = useState<Brand>('WGA');
+  const [expenseBrand, setExpenseBrand] = useState<Brand>('Wood Grain Alchemist');
   const [expenseVendor, setExpenseVendor] = useState('');
   const [expenseAmount, setExpenseAmount] = useState('');
   const [expenseDescription, setExpenseDescription] = useState('');
@@ -113,19 +113,19 @@ export default function Financials() {
   const completedProjects = projects.filter(p => p.status === 'Complete');
   
   // Revenue
-  const revenueWGA = completedProjects.filter(p => p.brand === 'WGA').reduce((acc, p) => acc + (p.financials.actual_sale_price || 0), 0);
+  const revenueWGA = completedProjects.filter(p => p.brand === 'Wood Grain Alchemist').reduce((acc, p) => acc + (p.financials.actual_sale_price || 0), 0);
   const revenueTT = completedProjects.filter(p => p.brand === 'Twisted Twig').reduce((acc, p) => acc + (p.financials.actual_sale_price || 0), 0);
   const totalRevenue = revenueWGA + revenueTT;
 
   // COGS (Cost of Goods Sold)
-  const cogsWGA = completedProjects.filter(p => p.brand === 'WGA').reduce((acc, p) => acc + (p.financials.item_cost || 0) + (p.financials.supplies_cost || 0), 0);
+  const cogsWGA = completedProjects.filter(p => p.brand === 'Wood Grain Alchemist').reduce((acc, p) => acc + (p.financials.item_cost || 0) + (p.financials.supplies_cost || 0), 0);
   const cogsTT = completedProjects.filter(p => p.brand === 'Twisted Twig').reduce((acc, p) => acc + (p.financials.item_cost || 0) + (p.financials.supplies_cost || 0), 0);
   const totalCOGS = cogsWGA + cogsTT;
 
   const grossProfit = totalRevenue - totalCOGS;
 
   // Operating Expenses (Purchase Orders)
-  const expensesWGA = purchaseOrders.filter(po => po.brand === 'WGA').reduce((acc, po) => acc + po.total_amount, 0);
+  const expensesWGA = purchaseOrders.filter(po => po.brand === 'Wood Grain Alchemist').reduce((acc, po) => acc + po.total_amount, 0);
   const expensesTT = purchaseOrders.filter(po => po.brand === 'Twisted Twig').reduce((acc, po) => acc + po.total_amount, 0);
   const totalExpenses = expensesWGA + expensesTT;
 
@@ -244,7 +244,7 @@ export default function Financials() {
                         value={saleBrand}
                         onChange={(e) => setSaleBrand(e.target.value as Brand)}
                       >
-                        <option value="WGA">Wood Grain Alchemist</option>
+                        <option value="Wood Grain Alchemist">Wood Grain Alchemist</option>
                         <option value="Twisted Twig">Twisted Twig</option>
                       </select>
                     </div>
@@ -328,7 +328,7 @@ export default function Financials() {
                         value={expenseBrand}
                         onChange={(e) => setExpenseBrand(e.target.value as Brand)}
                       >
-                        <option value="WGA">Wood Grain Alchemist</option>
+                        <option value="Wood Grain Alchemist">Wood Grain Alchemist</option>
                         <option value="Twisted Twig">Twisted Twig</option>
                       </select>
                     </div>

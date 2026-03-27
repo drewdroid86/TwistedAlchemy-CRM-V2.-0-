@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { subscribeToCollection, createDocument, updateDocument, updateArrayField } from '../services/firebaseService';
+import { subscribeToCollection, createDocument, updateDocument, updateArrayField, runFirestoreTransaction } from '../services/firebaseService';
+import { doc, arrayUnion } from 'firebase/firestore';
+import { db } from '../firebase';
 import { Project, Brand, Customer, PricingStrategy, InventoryItem } from '../types';
 import { Plus, Search, Filter, Hammer, Clock, CheckCircle2, AlertCircle, DollarSign, ChevronRight, X, Calculator, Camera, Image as ImageIcon, Sparkles, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -35,6 +37,9 @@ export default function Projects() {
     reasoning: string;
     margin_at_suggested: number;
   } | null>(null);
+
+  const [newLogEntry, setNewLogEntry] = useState({ action: '', notes: '' });
+  const [isAddingLog, setIsAddingLog] = useState(false);
   
   const showToast = (message: string, type: 'error' | 'success' = 'error') => {
     setToast({message, type});
@@ -92,7 +97,37 @@ export default function Projects() {
   };
 
   const updateStatus = async (id: string, status: Project['status']) => {
-    await updateDocument('projects', id, { status });
+    try {
+      if (status === 'Complete') {
+        const project = projects.find(p => p.id === id);
+        if (project?.client_id) {
+          await runFirestoreTransaction(async (transaction) => {
+            const projectRef = doc(db, 'projects', id);
+            const customerRef = doc(db, 'customers', project.client_id!);
+
+            transaction.update(projectRef, {
+              status,
+              updatedAt: new Date().toISOString()
+            });
+
+            transaction.update(customerRef, {
+              purchase_history: arrayUnion(id)
+            });
+          });
+          showToast('Project completed and synced to customer history!', 'success');
+        } else {
+          await updateDocument('projects', id, { status });
+        }
+      } else {
+        await updateDocument('projects', id, { status });
+      }
+
+      if (selectedProject?.id === id) {
+        setSelectedProject({ ...selectedProject, status });
+      }
+    } catch (e) {
+      showToast('Failed to update status.');
+    }
   };
 
   const updateFinancials = async (id: string, financials: Project['financials']) => {
@@ -135,6 +170,29 @@ export default function Projects() {
       }
     } catch (e) {
       showToast('Failed to remove image.');
+    }
+  };
+
+  const handleAddLogEntry = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedProject || !newLogEntry.action) return;
+
+    const entry = {
+      ...newLogEntry,
+      timestamp: new Date().toISOString()
+    };
+
+    try {
+      await updateArrayField('projects', selectedProject.id!, 'work_log', entry, 'add');
+      setSelectedProject({
+        ...selectedProject,
+        work_log: [...selectedProject.work_log, entry]
+      });
+      setNewLogEntry({ action: '', notes: '' });
+      setIsAddingLog(false);
+      showToast('Log entry added!', 'success');
+    } catch (e) {
+      showToast('Failed to add log entry.');
     }
   };
 
@@ -480,23 +538,86 @@ export default function Projects() {
                   {/* Work Log */}
                   <div className="space-y-4">
                     <h5 className="text-xs font-bold text-stone-400 uppercase tracking-widest">Work Log</h5>
-                    <div className="space-y-3">
-                      {selectedProject.work_log.map((log, i) => (
-                        <div key={i} className="flex gap-3">
-                          <div className="w-1 bg-stone-200 rounded-full" />
+                    <div className="space-y-6 relative before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-100">
+                      {[...selectedProject.work_log].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).map((log, i) => (
+                        <div key={i} className="relative pl-8 animate-in fade-in slide-in-from-left-2 duration-300">
+                          <div className="absolute left-0 top-1.5 w-6 h-6 rounded-full bg-white border-4 border-slate-50 flex items-center justify-center shadow-sm">
+                            <div className="w-2 h-2 rounded-full bg-slate-400" />
+                          </div>
                           <div>
-                            <p className="text-xs font-bold text-stone-900">{log.action}</p>
-                            <p className="text-[10px] text-stone-400">{new Date(log.timestamp).toLocaleDateString()}</p>
+                            <div className="flex items-center gap-2 mb-1">
+                              <p className="text-sm font-bold text-slate-900">{log.action}</p>
+                              <span className="text-[10px] font-bold text-slate-400 uppercase">
+                                {new Date(log.timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                              </span>
+                            </div>
+                            <p className="text-xs text-slate-500 leading-relaxed bg-slate-50/50 p-2 rounded-lg border border-slate-100/50">
+                              {log.notes}
+                            </p>
                           </div>
                         </div>
                       ))}
                       {selectedProject.work_log.length === 0 && (
-                        <p className="text-sm text-stone-400 italic">No work logged yet.</p>
+                        <div className="pl-8 py-4">
+                          <p className="text-sm text-slate-400 italic bg-slate-50 border border-dashed border-slate-200 rounded-xl p-4 text-center">
+                            No entries in the work log yet.
+                          </p>
+                        </div>
                       )}
-                      <button className="text-xs font-bold text-stone-900 flex items-center gap-1 hover:underline">
-                        <Plus size={12} /> Add Entry
-                      </button>
                     </div>
+
+                    {!isAddingLog ? (
+                      <button
+                        onClick={() => setIsAddingLog(true)}
+                        className="w-full py-3 border-2 border-dashed border-slate-200 rounded-2xl text-slate-400 text-xs font-bold hover:border-slate-300 hover:text-slate-600 transition-all flex items-center justify-center gap-2"
+                      >
+                        <Plus size={14} /> Add Log Entry
+                      </button>
+                    ) : (
+                      <motion.form
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        onSubmit={handleAddLogEntry}
+                        className="bg-slate-50 border border-slate-100 p-4 rounded-2xl space-y-4"
+                      >
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Action</label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="e.g. Applied base coat"
+                            className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/5"
+                            value={newLogEntry.action}
+                            onChange={(e) => setNewLogEntry({ ...newLogEntry, action: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Notes</label>
+                          <textarea
+                            rows={3}
+                            placeholder="Detailed work notes..."
+                            className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/5 resize-none"
+                            value={newLogEntry.notes}
+                            onChange={(e) => setNewLogEntry({ ...newLogEntry, notes: e.target.value })}
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            type="submit"
+                            className="flex-1 bg-slate-900 text-white py-2 rounded-xl text-xs font-bold hover:opacity-90 transition-all"
+                          >
+                            Save Entry
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setIsAddingLog(false)}
+                            className="flex-1 bg-white border border-slate-200 text-slate-600 py-2 rounded-xl text-xs font-bold hover:bg-slate-50 transition-all"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </motion.form>
+                    )}
 
                     {/* Project Gallery */}
                     <div className="pt-6 border-t border-stone-100">
