@@ -85,11 +85,11 @@ const TUTORIAL_SECTIONS = [
     tips: ['Link projects to customers to build their purchase history.', 'Keep contact details handy for delivery coordination.']
   },
   {
-    id: 'reports',
-    title: 'Reports: Business Intelligence',
+    id: 'financials',
+    title: 'Financials: Business Intelligence',
     icon: FileText,
-    content: 'Digital and physical reports for your business reviews. Track profit margins, monthly revenue, and inventory health.',
-    tips: ['Use "Digital Export" to save data for your accountant.', 'Use "Print Report" for your physical monthly review meetings.']
+    content: 'Digital and physical financial reports for your business reviews. Track profit margins, monthly revenue, and inventory health via the Loan Officer Summary, Profit & Loss, and Balance Sheet.',
+    tips: ['Use "Export CSV" to save data for your accountant.', 'Use "Print Report" for your physical monthly review meetings.']
   }
 ];
 
@@ -109,10 +109,31 @@ export default function Help() {
     try {
       const model = ai.models.generateContent({
         model: "gemini-3-flash-preview",
-        contents: `You are a helpful assistant for the "Twisted Alchemy CRM" app. 
-        The app has sections: Dashboard (notes/stats), Inventory (materials/WIP), Projects (Kanban/Pricing), Purchasing (Receipt AI), Customers, and Reports.
-        The user is asking: "${question}"
-        Provide a concise, helpful answer about how to use the app or woodworking business advice related to the app.`,
+        contents: question,
+        config: {
+          systemInstruction: `You are the Twisted Alchemy shop assistant — an expert in furniture refurbishment, woodworking, and small business operations for a two-person husband-wife shop.
+
+The shop runs two brands:
+- **Twisted Twig**: Cosmetic refurbishment of secondhand furniture. Focus on paint, stain, hardware, upholstery, and aesthetic transformation.
+- **Wood Grain Alchemist (WGA)**: Custom furniture builds from raw lumber, and structural repairs for Twisted Twig pieces that need more than cosmetic work.
+
+You have deep knowledge of:
+- Wood species, grain patterns, joinery, finishing techniques (milk paint, chalk paint, danish oil, poly, lacquer)
+- Pricing strategy for artisan furniture: cost-plus, value-based, competitive market rates
+- Sourcing: thrift stores, estate sales, Facebook Marketplace, lumber yards
+- Small business operations: cash flow, loan prep, inventory tracking, job costing
+- The CRM system itself: Projects (Intake → Assessment → Structural Repair → Finishing → Complete), Inventory (Raw Materials, Furniture Pieces, Supplies), Purchase Orders, Customers, and Financials
+
+When answering:
+- Be practical and direct — this is a working shop, not a hobbyist setting
+- Give real numbers when asked about pricing or costs
+- If asked about the CRM, give step-by-step instructions relevant to the actual workflow
+- If asked about a loan or financials, help the user understand their P&L, margin, and what lenders look for
+- Keep answers concise. The user is often on a phone in the shop.
+
+Never say "I don't know" — give your best practical answer and note if you're estimating.`,
+          temperature: 0.7,
+        }
       });
       
       const response = await model;
@@ -129,11 +150,11 @@ export default function Help() {
     <div className="max-w-5xl mx-auto space-y-12 pb-20">
       {/* Hero Section */}
       <div className="text-center space-y-4">
-        <div className="w-16 h-16 bg-olive-accent rounded-2xl flex items-center justify-center mx-auto shadow-lg">
+        <div className="w-16 h-16 bg-accent rounded-2xl flex items-center justify-center mx-auto shadow-lg">
           <HelpCircle className="text-white w-8 h-8" />
         </div>
-        <h2 className="text-4xl font-serif italic font-bold text-stone-900">App Guide & Support</h2>
-        <p className="text-stone-500 max-w-lg mx-auto">
+        <h2 className="text-4xl font-serif italic font-bold text-slate-900">App Guide & Support</h2>
+        <p className="text-slate-600 max-w-lg mx-auto">
           Learn how to master your shop management system or ask a question to get instant help.
         </p>
       </div>
@@ -141,7 +162,7 @@ export default function Help() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
         {/* Tutorial Navigation */}
         <div className="space-y-4">
-          <h3 className="text-xs font-bold text-stone-400 uppercase tracking-widest px-2">App Sections</h3>
+          <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest px-2">App Sections</h3>
           <div className="space-y-1">
             {TUTORIAL_SECTIONS.map((section) => (
               <button
@@ -150,7 +171,7 @@ export default function Help() {
                 className={`w-full flex items-center justify-between p-4 rounded-2xl transition-all ${
                   selectedSection.id === section.id 
                     ? 'bg-olive-accent text-white shadow-md' 
-                    : 'bg-white text-stone-600 hover:bg-stone-100'
+                    : 'bg-white text-slate-700 hover:bg-slate-100'
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -174,14 +195,14 @@ export default function Help() {
               className="card-refined p-8 space-y-8"
             >
               <div className="flex items-center gap-4">
-                <div className="p-3 bg-stone-100 rounded-xl">
-                  <selectedSection.icon size={24} className="text-olive-accent" />
+                <div className="p-3 bg-slate-100 rounded-xl">
+                  <selectedSection.icon size={24} className="text-accent" />
                 </div>
-                <h3 className="text-2xl font-serif italic font-bold text-stone-900">{selectedSection.title}</h3>
+                <h3 className="text-2xl font-serif italic font-bold text-slate-900">{selectedSection.title}</h3>
               </div>
 
               <div className="space-y-6">
-                <p className="text-stone-600 leading-relaxed text-lg">
+                <p className="text-slate-600 leading-relaxed text-lg">
                   {selectedSection.content}
                 </p>
 
@@ -194,7 +215,7 @@ export default function Help() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: i * 0.1 }}
                         key={i} 
-                        className="flex gap-6 p-6 bg-stone-50 rounded-3xl border border-stone-100 group hover:border-stone-300 transition-all"
+                        className="flex gap-6 p-6 bg-slate-50 rounded-3xl border border-slate-100 group hover:border-slate-300 transition-all"
                       >
                         <div className="flex-none w-10 h-10 bg-olive-accent text-white rounded-full flex items-center justify-center font-serif italic text-lg shadow-md">
                           {i + 1}
@@ -240,7 +261,7 @@ export default function Help() {
             
             <div className="relative z-10 space-y-6">
               <div className="flex items-center gap-3">
-                <MessageSquare className="text-warm-bg" size={24} />
+                <MessageSquare className="text-slate-100" size={24} />
                 <h3 className="text-xl font-serif italic font-bold">Have a Question?</h3>
               </div>
               <p className="text-stone-300 text-sm">
@@ -251,7 +272,7 @@ export default function Help() {
                 <input
                   type="text"
                   placeholder="e.g. How do I track board-foot costs?"
-                  className="flex-1 bg-white/10 border border-white/20 rounded-2xl px-6 py-4 text-white placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-warm-bg/50 transition-all"
+                  className="flex-1 bg-white/10 border border-white/20 rounded-2xl px-6 py-4 text-white placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all"
                   value={question}
                   onChange={(e) => setQuestion(e.target.value)}
                 />

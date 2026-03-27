@@ -12,7 +12,6 @@ import {
   onSnapshot, 
   query, 
   where,
-  getDocs,
   Timestamp,
   DocumentData,
   QueryConstraint,
@@ -20,6 +19,7 @@ import {
   arrayRemove
 } from 'firebase/firestore';
 import { db } from '../firebase';
+export { db };
 
 export enum OperationType {
   CREATE = 'create',
