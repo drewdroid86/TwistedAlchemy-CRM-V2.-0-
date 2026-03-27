@@ -4,20 +4,16 @@ import { PurchaseOrder, Brand, InventoryItem } from '../types';
 import { 
   Plus, 
   Search, 
-  FileText, 
   Camera, 
-  Upload, 
   CheckCircle2, 
   Clock, 
-  X,
-  Trash2,
   ChevronRight,
   Loader2,
   DollarSign,
   Store
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
 import { processReceiptImage } from '../services/receiptService';
+import PurchaseOrderModal from '../components/PurchaseOrderModal';
 
 export default function Purchasing() {
   const [pos, setPos] = useState<PurchaseOrder[]>([]);
