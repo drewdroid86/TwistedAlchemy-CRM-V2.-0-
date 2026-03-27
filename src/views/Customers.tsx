@@ -1,23 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { subscribeToCollection, createDocument } from '../services/firebaseService';
-import { Customer, Project } from '../types';
-import { Plus, Search, Mail, Phone, History, User, X, DollarSign } from 'lucide-react';
+import { Customer } from '../types';
+import { Plus, Search, Mail, Phone, History, User, X } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export default function Customers() {
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newCustomer, setNewCustomer] = useState({ name: '', contact: '' });
 
   useEffect(() => {
-    const unsubCustomers = subscribeToCollection<Customer>('customers', setCustomers);
-    const unsubProjects = subscribeToCollection<Project>('projects', setProjects);
-    return () => {
-      unsubCustomers();
-      unsubProjects();
-    };
+    return subscribeToCollection<Customer>('customers', setCustomers);
   }, []);
 
   const filteredCustomers = customers.filter(c => 
@@ -79,15 +73,6 @@ export default function Customers() {
               <div className="flex items-center gap-3 text-sm text-stone-600">
                 <History size={16} className="text-stone-400" />
                 <span>{customer.purchase_history?.length || 0} Projects</span>
-              </div>
-              <div className="flex items-center gap-3 text-sm text-stone-600">
-                <DollarSign size={16} className="text-stone-400" />
-                <span className="font-bold text-emerald-600">Total Spent: ${(
-                  customer.purchase_history?.reduce((sum, pid) => {
-                    const p = projects.find(proj => proj.id === pid);
-                    return sum + (p?.status === 'Complete' ? (p.financials?.actual_sale_price || 0) : 0);
-                  }, 0) || 0
-                ).toLocaleString()}</span>
               </div>
             </div>
 

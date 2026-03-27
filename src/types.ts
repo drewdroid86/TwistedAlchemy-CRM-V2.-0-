@@ -43,8 +43,8 @@ export interface WorkLogEntry {
 export interface Project {
   id?: string;
   brand: Brand;
-  title?: string;
-  description?: string;
+  title: string;
+  description: string;
   client_id?: string;
   inventory_item_id?: string;
   status: 'Intake' | 'Assessment' | 'Structural Repair' | 'Finishing' | 'Complete';
@@ -54,7 +54,6 @@ export interface Project {
   images?: string[];
   createdAt: string;
   updatedAt: string;
-  date_completed?: string;
 }
 
 export interface Customer {
@@ -69,6 +68,19 @@ export interface ShopNote {
   text: string;
   author: string;
   createdAt: string;
+}
+
+export interface Purchase {
+  vendor: string;
+  items: {
+    description: string;
+    amount: number;
+  }[];
+  total_cost: number;
+  date: string;
+  linked_project_id?: string;
+  receipt_url?: string;
+  owner: Brand;
 }
 
 export interface PurchaseOrder {
@@ -87,22 +99,4 @@ export interface PurchaseOrder {
   receipt_url?: string;
   notes?: string;
   createdAt: string;
-  received_date?: string;
-}
-
-export interface Purchase {
-  id?: string;
-  vendor: string;
-  items: {
-    description: string;
-    quantity: number;
-    price: number;
-  }[];
-  total_cost: number;
-  date: string;
-  linked_project_id?: string;
-  receipt_url?: string;
-  owner: Brand;
-  createdAt?: string;
-  updatedAt?: string;
 }

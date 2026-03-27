@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { subscribeToCollection, createDocument, deleteDocument } from '../services/firebaseService';
-import { Project, InventoryItem, ShopNote, Brand } from '../types';
+import { 
+  getInventoryValueByOwner, 
+  getProjectCountByStatusAndBrand, 
+  getRevenueThisMonthVsLastMonth, 
+  getTop5Customers 
+} from '../services/analyticsService';
+import { Project, InventoryItem, ShopNote } from '../types';
 import { 
   TrendingUp, 
   Clock, 
@@ -15,21 +21,52 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { auth } from '../firebase';
+import { 
+  PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+} from 'recharts';
 
 export default function Dashboard() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [notes, setNotes] = useState<ShopNote[]>([]);
   const [newNote, setNewNote] = useState('');
-  const [filterBrand, setFilterBrand] = useState<Brand | 'All'>('Twisted Twig');
+  
+  // Analytics State
+  const [inventoryValue, setInventoryValue] = useState<any[]>([]);
+  const [projectCounts, setProjectCounts] = useState<any[]>([]);
+  const [revenueComparison, setRevenueComparison] = useState<any[]>([]);
+  const [topCustomers, setTopCustomers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubProjects = subscribeToCollection<Project>('projects', setProjects);
     const unsubInventory = subscribeToCollection<InventoryItem>('inventory', setInventory);
     const unsubNotes = subscribeToCollection<ShopNote>('shop_notes', (data) => {
-      // Sort notes by newest first
       setNotes(data.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
     });
+
+    const fetchAnalytics = async () => {
+      try {
+        setLoading(true);
+        const [inv, proj, rev, cust] = await Promise.all([
+          getInventoryValueByOwner(),
+          getProjectCountByStatusAndBrand(),
+          getRevenueThisMonthVsLastMonth(),
+          getTop5Customers()
+        ]);
+        setInventoryValue(inv);
+        setProjectCounts(proj);
+        setRevenueComparison(rev);
+        setTopCustomers(cust);
+      } catch (err) {
+        setError('Failed to load analytics data.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAnalytics();
+
     return () => {
       unsubProjects();
       unsubInventory();
@@ -37,13 +74,13 @@ export default function Dashboard() {
     };
   }, []);
 
-  const activeProjects = projects.filter(p => p.status !== 'Complete' && (filterBrand === 'All' || p.brand === filterBrand));
-  const completedProjects = projects.filter(p => p.status === 'Complete' && (filterBrand === 'All' || p.brand === filterBrand));
+  const activeProjects = projects.filter(p => p.status !== 'Complete');
+  const completedProjects = projects.filter(p => p.status === 'Complete');
   
   const totalWIPValue = activeProjects.reduce((acc, p) => acc + (p.financials.target_sale_price || 0), 0);
   const totalRevenue = completedProjects.reduce((acc, p) => acc + (p.financials.actual_sale_price || 0), 0);
   
-  const lowStock = inventory.filter(i => i.quantity <= 2 && (filterBrand === 'All' || i.owner === filterBrand));
+  const lowStock = inventory.filter(i => i.quantity < 5);
 
   const stats = [
     { label: 'Active Projects', value: activeProjects.length, icon: Hammer, color: 'bg-app-bg text-text-secondary' },
@@ -95,6 +132,76 @@ export default function Dashboard() {
             <h3 className="text-2xl font-bold text-slate-900 mt-1">{stat.value}</h3>
           </motion.div>
         ))}
+      </div>
+
+      {/* Analytics Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Inventory Value by Owner (Pie) */}
+        <div className="card-refined p-6">
+          <h3 className="text-lg font-serif italic font-bold text-stone-900 mb-6">Inventory Value by Owner</h3>
+          {loading ? <div className="h-64 flex items-center justify-center">Loading...</div> : error ? <div className="h-64 flex items-center justify-center text-red-500">{error}</div> : (
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie data={inventoryValue} dataKey="value" nameKey="owner" cx="50%" cy="50%" outerRadius={80} fill="#2563eb" label>
+                  {inventoryValue.map((_, index) => <Cell key={`cell-${index}`} fill={index % 2 === 0 ? '#2563eb' : '#64748b'} />)}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+
+        {/* Project Count by Status/Brand (Stacked Bar) */}
+        <div className="card-refined p-6">
+          <h3 className="text-lg font-serif italic font-bold text-stone-900 mb-6">Project Count by Status & Brand</h3>
+          {loading ? <div className="h-64 flex items-center justify-center">Loading...</div> : error ? <div className="h-64 flex items-center justify-center text-red-500">{error}</div> : (
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={projectCounts}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="status" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="Twisted Twig" stackId="a" fill="#2563eb" />
+                <Bar dataKey="Wood Grain Alchemist" stackId="a" fill="#64748b" />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+
+        {/* Revenue Comparison (Grouped Bar) */}
+        <div className="card-refined p-6">
+          <h3 className="text-lg font-serif italic font-bold text-stone-900 mb-6">Revenue: This Month vs Last Month</h3>
+          {loading ? <div className="h-64 flex items-center justify-center">Loading...</div> : error ? <div className="h-64 flex items-center justify-center text-red-500">{error}</div> : (
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={revenueComparison}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="period" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="revenue" fill="#2563eb" />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+
+        {/* Top 5 Customers (Horizontal Bar) */}
+        <div className="card-refined p-6">
+          <h3 className="text-lg font-serif italic font-bold text-stone-900 mb-6">Top 5 Customers</h3>
+          {loading ? <div className="h-64 flex items-center justify-center">Loading...</div> : error ? <div className="h-64 flex items-center justify-center text-red-500">{error}</div> : (
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={topCustomers} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis type="number" />
+                <YAxis dataKey="name" type="category" width={100} />
+                <Tooltip />
+                <Bar dataKey="purchases" fill="#64748b" />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

@@ -11,13 +11,16 @@ import {
   doc, 
   onSnapshot, 
   query, 
+  where,
+  getDocs,
+  Timestamp,
   DocumentData,
   QueryConstraint,
   arrayUnion,
-  arrayRemove,
-  runTransaction
+  arrayRemove
 } from 'firebase/firestore';
 import { db } from '../firebase';
+export { db };
 
 export enum OperationType {
   CREATE = 'create',
@@ -84,14 +87,6 @@ export const updateDocument = async <T extends DocumentData>(path: string, id: s
     });
   } catch (error) {
     handleFirestoreError(error, OperationType.UPDATE, `${path}/${id}`);
-  }
-};
-
-export const runFirestoreTransaction = async (updateFunction: (transaction: any) => Promise<any>) => {
-  try {
-    return await runTransaction(db, updateFunction);
-  } catch (error) {
-    handleFirestoreError(error, OperationType.WRITE, 'transaction');
   }
 };
 
