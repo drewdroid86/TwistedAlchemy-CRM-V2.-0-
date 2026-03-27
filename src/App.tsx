@@ -28,7 +28,7 @@ import Dashboard from './views/Dashboard';
 import Inventory from './views/Inventory';
 import Projects from './views/Projects';
 import Customers from './views/Customers';
-import Reports from './views/Reports';
+import Financials from './views/Financials';
 import Purchasing from './views/Purchasing';
 import Help from './views/Help';
 
@@ -104,7 +104,7 @@ export default function App() {
     { id: 'projects', label: 'Projects', icon: Hammer },
     { id: 'purchasing', label: 'Purchasing', icon: ShoppingCart },
     { id: 'customers', label: 'Customers', icon: Users },
-    { id: 'reports', label: 'Reports', icon: FileText },
+    { id: 'reports', label: 'Financials', icon: FileText },
     { id: 'help', label: 'Help & Guide', icon: HelpCircle },
   ];
 
@@ -199,7 +199,7 @@ export default function App() {
                 {activeView === 'projects' && <Projects />}
                 {activeView === 'purchasing' && <Purchasing />}
                 {activeView === 'customers' && <Customers />}
-                {activeView === 'reports' && <Reports />}
+                {activeView === 'reports' && <Financials />}
                 {activeView === 'help' && <Help />}
               </motion.div>
             </AnimatePresence>

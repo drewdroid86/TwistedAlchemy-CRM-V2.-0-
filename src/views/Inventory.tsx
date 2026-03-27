@@ -9,7 +9,7 @@ export default function Inventory() {
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterBrand, setFilterBrand] = useState<Brand | 'All'>('All');
+  const [filterBrand, setFilterBrand] = useState<Brand | 'All'>('Twisted Twig');
   
   const [newItem, setNewItem] = useState<Partial<InventoryItem>>({
     owner: 'Twisted Twig',
@@ -23,15 +23,23 @@ export default function Inventory() {
     return subscribeToCollection<InventoryItem>('inventory', setItems);
   }, []);
 
-  const filteredItems = items.filter(item => {
-    const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesBrand = filterBrand === 'All' || item.owner === filterBrand;
-    return matchesSearch && matchesBrand;
-  });
+  const filteredItems = [...items]
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .filter(item => {
+      const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesBrand = filterBrand === 'All' || item.owner === filterBrand;
+      return matchesSearch && matchesBrand;
+    });
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    await createDocument('inventory', newItem);
+    const inventoryNumber = `INV-${Math.floor(100000 + Math.random() * 900000)}`;
+    await createDocument('inventory', { 
+      ...newItem, 
+      inventoryNumber, 
+      createdAt: new Date().toISOString(), 
+      updatedAt: new Date().toISOString() 
+    });
     setIsModalOpen(false);
     setNewItem({
       owner: 'Twisted Twig',
@@ -104,7 +112,7 @@ export default function Inventory() {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
               ) : (
-                <div className="h-48 bg-stone-100 flex items-center justify-center text-stone-300">
+                <div className="h-48 bg-slate-100 flex items-center justify-center text-slate-400">
                   <Package size={48} />
                 </div>
               )}
@@ -116,21 +124,21 @@ export default function Inventory() {
                     {item.owner}
                   </div>
                   <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button className="p-1.5 hover:bg-stone-100 rounded-lg text-stone-400 hover:text-stone-900">
+                    <button className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-900">
                       <Edit2 size={14} />
                     </button>
                     <button 
                       onClick={() => handleDelete(item.id!)}
-                      className="p-1.5 hover:bg-red-50 rounded-lg text-stone-400 hover:text-red-600"
+                      className="p-1.5 hover:bg-red-50 rounded-lg text-slate-400 hover:text-red-600"
                     >
                       <Trash2 size={14} />
                     </button>
                   </div>
                 </div>
                 <h3 className="text-lg font-bold text-stone-900 mb-1">{item.name}</h3>
-                <p className="text-sm text-stone-500 mb-4">{item.type}</p>
+                <p className="text-sm text-slate-600 mb-4">{item.type}</p>
                 
-                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-stone-100">
+                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-100">
                   <div>
                     <p className="text-[10px] text-stone-400 uppercase font-bold mb-1">Quantity</p>
                     <p className="text-sm font-semibold text-stone-900 flex items-center gap-1">
@@ -148,7 +156,7 @@ export default function Inventory() {
                     <p className="text-[10px] text-stone-400 uppercase font-bold mb-1">Condition</p>
                     <div className="w-full bg-stone-100 h-1.5 rounded-full overflow-hidden">
                       <div 
-                        className="bg-olive-accent h-full rounded-full" 
+                        className="bg-accent h-full rounded-full" 
                         style={{ width: `${item.current_condition * 10}%` }}
                       />
                     </div>
@@ -168,7 +176,7 @@ export default function Inventory() {
             animate={{ opacity: 1, scale: 1 }}
             className="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden"
           >
-            <div className="p-6 border-b border-stone-100 flex justify-between items-center">
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center">
               <h3 className="text-xl font-serif italic font-bold text-stone-900">Add Inventory Item</h3>
               <button onClick={() => setIsModalOpen(false)} className="text-stone-400 hover:text-stone-900">
                 <X size={24} />
@@ -179,7 +187,7 @@ export default function Inventory() {
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-stone-500 uppercase">Owner</label>
                   <select 
-                    className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-2 focus:outline-none"
+                    className="w-full bg-slate-50 border border-stone-200 rounded-xl px-4 py-2 focus:outline-none"
                     value={newItem.owner}
                     onChange={(e) => setNewItem({...newItem, owner: e.target.value as Brand})}
                   >
@@ -229,6 +237,7 @@ export default function Inventory() {
                   <input
                     type="number"
                     required
+                    step="0.01"
                     className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-2 focus:outline-none"
                     value={newItem.acquisition_cost || 0}
                     onChange={(e) => setNewItem({...newItem, acquisition_cost: parseFloat(e.target.value)})}

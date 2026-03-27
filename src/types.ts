@@ -11,6 +11,7 @@ export type PricingStrategy =
 
 export interface InventoryItem {
   id?: string;
+  inventoryNumber: string;
   owner: Brand;
   type: 'Raw Material' | 'Furniture Piece' | 'Supply';
   name: string;
@@ -42,6 +43,8 @@ export interface WorkLogEntry {
 export interface Project {
   id?: string;
   brand: Brand;
+  title?: string;
+  description?: string;
   client_id?: string;
   inventory_item_id?: string;
   status: 'Intake' | 'Assessment' | 'Structural Repair' | 'Finishing' | 'Complete';
@@ -51,6 +54,7 @@ export interface Project {
   images?: string[];
   createdAt: string;
   updatedAt: string;
+  date_completed?: string;
 }
 
 export interface Customer {
@@ -78,8 +82,27 @@ export interface PurchaseOrder {
     description: string;
     quantity: number;
     unit_price: number;
+    inventory_item_id?: string;
   }[];
   receipt_url?: string;
   notes?: string;
   createdAt: string;
+  received_date?: string;
+}
+
+export interface Purchase {
+  id?: string;
+  vendor: string;
+  items: {
+    description: string;
+    quantity: number;
+    price: number;
+  }[];
+  total_cost: number;
+  date: string;
+  linked_project_id?: string;
+  receipt_url?: string;
+  owner: Brand;
+  createdAt?: string;
+  updatedAt?: string;
 }
