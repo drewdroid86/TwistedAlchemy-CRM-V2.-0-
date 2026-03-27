@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { subscribeToCollection, createDocument, deleteDocument } from '../services/firebaseService';
-import { Project, InventoryItem, ShopNote } from '../types';
+import { Project, InventoryItem, ShopNote, Brand } from '../types';
 import { 
   TrendingUp, 
   Clock, 
@@ -21,6 +21,7 @@ export default function Dashboard() {
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [notes, setNotes] = useState<ShopNote[]>([]);
   const [newNote, setNewNote] = useState('');
+  const [filterBrand, setFilterBrand] = useState<Brand | 'All'>('Twisted Twig');
 
   useEffect(() => {
     const unsubProjects = subscribeToCollection<Project>('projects', setProjects);
@@ -36,13 +37,13 @@ export default function Dashboard() {
     };
   }, []);
 
-  const activeProjects = projects.filter(p => p.status !== 'Complete');
-  const completedProjects = projects.filter(p => p.status === 'Complete');
+  const activeProjects = projects.filter(p => p.status !== 'Complete' && (filterBrand === 'All' || p.brand === filterBrand));
+  const completedProjects = projects.filter(p => p.status === 'Complete' && (filterBrand === 'All' || p.brand === filterBrand));
   
   const totalWIPValue = activeProjects.reduce((acc, p) => acc + (p.financials.target_sale_price || 0), 0);
   const totalRevenue = completedProjects.reduce((acc, p) => acc + (p.financials.actual_sale_price || 0), 0);
   
-  const lowStock = inventory.filter(i => i.quantity < 5);
+  const lowStock = inventory.filter(i => i.quantity <= 2 && (filterBrand === 'All' || i.owner === filterBrand));
 
   const stats = [
     { label: 'Active Projects', value: activeProjects.length, icon: Hammer, color: 'bg-app-bg text-text-secondary' },
