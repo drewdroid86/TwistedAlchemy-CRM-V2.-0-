@@ -11,6 +11,7 @@ export type PricingStrategy =
 
 export interface InventoryItem {
   id?: string;
+  inventoryNumber: string;
   owner: Brand;
   type: 'Raw Material' | 'Furniture Piece' | 'Supply';
   name: string;
@@ -78,6 +79,7 @@ export interface PurchaseOrder {
     description: string;
     quantity: number;
     unit_price: number;
+    inventory_item_id?: string;
   }[];
   receipt_url?: string;
   notes?: string;

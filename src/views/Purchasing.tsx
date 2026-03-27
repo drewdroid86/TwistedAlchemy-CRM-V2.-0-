@@ -21,6 +21,7 @@ import { processReceiptImage } from '../services/receiptService';
 
 export default function Purchasing() {
   const [pos, setPos] = useState<PurchaseOrder[]>([]);
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -36,9 +37,14 @@ export default function Purchasing() {
   });
 
   useEffect(() => {
-    return subscribeToCollection<PurchaseOrder>('purchase_orders', (data) => {
+    const unsubPOs = subscribeToCollection<PurchaseOrder>('purchase_orders', (data) => {
       setPos(data.sort((a, b) => b.date.localeCompare(a.date)));
     });
+    const unsubInventory = subscribeToCollection<InventoryItem>('inventory', setInventory);
+    return () => {
+      unsubPOs();
+      unsubInventory();
+    };
   }, []);
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -283,7 +289,21 @@ export default function Purchasing() {
                   <h4 className="text-xs font-bold text-stone-400 uppercase tracking-widest">Line Items</h4>
                   {newPO.items?.map((item, index) => (
                     <div key={index} className="grid grid-cols-12 gap-3 items-center">
-                      <div className="col-span-6">
+                      <div className="col-span-4">
+                        <select
+                          className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-sm"
+                          value={item.inventory_item_id || ''}
+                          onChange={(e) => {
+                            const newItems = [...(newPO.items || [])];
+                            newItems[index].inventory_item_id = e.target.value;
+                            setNewPO({...newPO, items: newItems});
+                          }}
+                        >
+                          <option value="">Select Item</option>
+                          {inventory.map(inv => <option key={inv.id} value={inv.id}>{inv.name} ({inv.inventoryNumber})</option>)}
+                        </select>
+                      </div>
+                      <div className="col-span-2">
                         <input
                           type="text"
                           placeholder="Description"

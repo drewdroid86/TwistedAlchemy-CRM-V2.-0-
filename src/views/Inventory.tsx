@@ -31,7 +31,13 @@ export default function Inventory() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    await createDocument('inventory', newItem);
+    const inventoryNumber = `INV-${Math.floor(100000 + Math.random() * 900000)}`;
+    await createDocument('inventory', { 
+      ...newItem, 
+      inventoryNumber, 
+      createdAt: new Date().toISOString(), 
+      updatedAt: new Date().toISOString() 
+    });
     setIsModalOpen(false);
     setNewItem({
       owner: 'Twisted Twig',

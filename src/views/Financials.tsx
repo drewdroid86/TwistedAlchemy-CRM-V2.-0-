@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { subscribeToCollection } from '../services/firebaseService';
-import { Project, InventoryItem, Customer, PurchaseOrder } from '../types';
+import { subscribeToCollection, createDocument } from '../services/firebaseService';
+import { Project, InventoryItem, Customer, PurchaseOrder, Brand } from '../types';
 import { 
   FileText, 
   Download, 
@@ -11,7 +11,9 @@ import {
   ChevronDown,
   Printer,
   DollarSign,
-  Scale
+  Scale,
+  History,
+  PlusCircle
 } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -20,7 +22,78 @@ export default function Financials() {
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
-  const [activeReport, setActiveReport] = useState<'loanOfficer' | 'pnl' | 'balanceSheet'>('loanOfficer');
+  const [activeReport, setActiveReport] = useState<'pnl' | 'balanceSheet' | 'digitize'>('pnl');
+
+  // Historical Data Entry State
+  const [saleDate, setSaleDate] = useState(new Date().toISOString().split('T')[0]);
+  const [saleBrand, setSaleBrand] = useState<Brand>('WGA');
+  const [saleRevenue, setSaleRevenue] = useState('');
+  const [saleCOGS, setSaleCOGS] = useState('');
+  const [saleName, setSaleName] = useState('');
+
+  const [expenseDate, setExpenseDate] = useState(new Date().toISOString().split('T')[0]);
+  const [expenseBrand, setExpenseBrand] = useState<Brand>('WGA');
+  const [expenseVendor, setExpenseVendor] = useState('');
+  const [expenseAmount, setExpenseAmount] = useState('');
+  const [expenseDescription, setExpenseDescription] = useState('');
+
+  const handleAddHistoricalSale = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await createDocument('projects', {
+        brand: saleBrand,
+        status: 'Complete',
+        assigned_to: 'Historical',
+        financials: {
+          target_sale_price: Number(saleRevenue),
+          actual_sale_price: Number(saleRevenue),
+          item_cost: Number(saleCOGS),
+          supplies_cost: 0,
+        },
+        work_log: [{
+          timestamp: new Date(saleDate).toISOString(),
+          action: 'Historical Entry',
+          notes: saleName || 'Historical Sale'
+        }],
+        createdAt: new Date(saleDate).toISOString(),
+        updatedAt: new Date(saleDate).toISOString()
+      });
+      setSaleRevenue('');
+      setSaleCOGS('');
+      setSaleName('');
+      alert('Historical sale added successfully!');
+    } catch (error) {
+      console.error('Error adding historical sale:', error);
+      alert('Failed to add historical sale.');
+    }
+  };
+
+  const handleAddHistoricalExpense = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await createDocument('purchase_orders', {
+        brand: expenseBrand,
+        vendor: expenseVendor || 'Historical Vendor',
+        date: expenseDate,
+        total_amount: Number(expenseAmount),
+        status: 'Received',
+        items: [{
+          description: expenseDescription || 'Historical Expense',
+          quantity: 1,
+          unit_price: Number(expenseAmount)
+        }],
+        notes: expenseDescription,
+        createdAt: new Date(expenseDate).toISOString()
+      });
+      setExpenseVendor('');
+      setExpenseAmount('');
+      setExpenseDescription('');
+      alert('Historical expense added successfully!');
+    } catch (error) {
+      console.error('Error adding historical expense:', error);
+      alert('Failed to add historical expense.');
+    }
+  };
 
   useEffect(() => {
     const unsubProjects = subscribeToCollection<Project>('projects', setProjects);
@@ -112,9 +185,9 @@ export default function Financials() {
       {/* Report Navigation */}
       <div className="flex gap-4 border-b border-slate-200 print:hidden">
         {[
-          { id: 'loanOfficer', label: 'Loan Officer Summary', icon: FileText },
           { id: 'pnl', label: 'Profit & Loss', icon: TrendingUp },
           { id: 'balanceSheet', label: 'Balance Sheet', icon: Scale },
+          { id: 'digitize', label: 'Digitize Records', icon: History },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -138,46 +211,177 @@ export default function Financials() {
       {/* Report Content */}
       <div className="grid grid-cols-1 gap-8">
         
-        {/* LOAN OFFICER SUMMARY */}
-        {activeReport === 'loanOfficer' && (
+        {/* DIGITIZE RECORDS */}
+        {activeReport === 'digitize' && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="card-refined p-6">
-                <p className="text-slate-500 text-sm font-bold uppercase tracking-wider">Total Revenue</p>
-                <p className="text-3xl font-bold text-slate-900 mt-2">${totalRevenue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              
+              {/* Historical Sale Form */}
+              <div className="card-refined p-8">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="bg-emerald-100 p-2 rounded-lg text-emerald-600">
+                    <TrendingUp size={24} />
+                  </div>
+                  <h3 className="text-xl font-serif italic font-bold text-slate-900">Log Historical Sale</h3>
+                </div>
+                
+                <form onSubmit={handleAddHistoricalSale} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-500 uppercase">Date</label>
+                      <input
+                        type="date"
+                        required
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-accent"
+                        value={saleDate}
+                        onChange={(e) => setSaleDate(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-500 uppercase">Brand</label>
+                      <select
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-accent"
+                        value={saleBrand}
+                        onChange={(e) => setSaleBrand(e.target.value as Brand)}
+                      >
+                        <option value="WGA">Wood Grain Alchemist</option>
+                        <option value="Twisted Twig">Twisted Twig</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-500 uppercase">Project / Item Name</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g., Custom Dining Table"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-accent"
+                      value={saleName}
+                      onChange={(e) => setSaleName(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-500 uppercase">Revenue ($)</label>
+                      <input
+                        type="number"
+                        required
+                        min="0"
+                        step="0.01"
+                        placeholder="0.00"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-accent"
+                        value={saleRevenue}
+                        onChange={(e) => setSaleRevenue(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-500 uppercase">COGS ($)</label>
+                      <input
+                        type="number"
+                        required
+                        min="0"
+                        step="0.01"
+                        placeholder="0.00"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-accent"
+                        value={saleCOGS}
+                        onChange={(e) => setSaleCOGS(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full mt-4 flex items-center justify-center gap-2 bg-emerald-600 text-white px-4 py-3 rounded-xl font-bold hover:bg-emerald-700 transition-all shadow-sm"
+                  >
+                    <PlusCircle size={18} /> Add Sale Record
+                  </button>
+                </form>
               </div>
-              <div className="card-refined p-6">
-                <p className="text-slate-500 text-sm font-bold uppercase tracking-wider">Gross Profit</p>
-                <p className="text-3xl font-bold text-slate-900 mt-2">${grossProfit.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+
+              {/* Historical Expense Form */}
+              <div className="card-refined p-8">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="bg-red-100 p-2 rounded-lg text-red-600">
+                    <FileText size={24} />
+                  </div>
+                  <h3 className="text-xl font-serif italic font-bold text-slate-900">Log Historical Expense</h3>
+                </div>
+                
+                <form onSubmit={handleAddHistoricalExpense} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-500 uppercase">Date</label>
+                      <input
+                        type="date"
+                        required
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-accent"
+                        value={expenseDate}
+                        onChange={(e) => setExpenseDate(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-500 uppercase">Brand</label>
+                      <select
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-accent"
+                        value={expenseBrand}
+                        onChange={(e) => setExpenseBrand(e.target.value as Brand)}
+                      >
+                        <option value="WGA">Wood Grain Alchemist</option>
+                        <option value="Twisted Twig">Twisted Twig</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-500 uppercase">Vendor</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g., Home Depot"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-accent"
+                        value={expenseVendor}
+                        onChange={(e) => setExpenseVendor(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-500 uppercase">Amount ($)</label>
+                      <input
+                        type="number"
+                        required
+                        min="0"
+                        step="0.01"
+                        placeholder="0.00"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-accent"
+                        value={expenseAmount}
+                        onChange={(e) => setExpenseAmount(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-500 uppercase">Description</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g., Lumber and screws"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-accent"
+                      value={expenseDescription}
+                      onChange={(e) => setExpenseDescription(e.target.value)}
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full mt-4 flex items-center justify-center gap-2 bg-red-600 text-white px-4 py-3 rounded-xl font-bold hover:bg-red-700 transition-all shadow-sm"
+                  >
+                    <PlusCircle size={18} /> Add Expense Record
+                  </button>
+                </form>
               </div>
-              <div className="card-refined p-6">
-                <p className="text-slate-500 text-sm font-bold uppercase tracking-wider">Net Income</p>
-                <p className={`text-3xl font-bold mt-2 ${netIncome >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                  ${netIncome.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-                </p>
-              </div>
-              <div className="card-refined p-6">
-                <p className="text-slate-500 text-sm font-bold uppercase tracking-wider">Total Assets</p>
-                <p className="text-3xl font-bold text-slate-900 mt-2">${totalAssets.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
-              </div>
-            </div>
-            
-            <div className="card-refined p-8">
-              <h3 className="text-lg font-serif italic font-bold text-slate-900 mb-6">Executive Summary</h3>
-              <div className="prose prose-slate max-w-none">
-                <p className="text-slate-600 leading-relaxed">
-                  Twisted Alchemy operates two distinct brands: <strong>Wood Grain Alchemist (WGA)</strong> and <strong>Twisted Twig</strong>. 
-                  To date, the combined operations have generated <strong>${totalRevenue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong> in total revenue. 
-                  After accounting for direct project costs (Cost of Goods Sold) of <strong>${totalCOGS.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong>, 
-                  the business maintains a gross profit of <strong>${grossProfit.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong>.
-                </p>
-                <p className="text-slate-600 leading-relaxed mt-4">
-                  Operating expenses, tracked via purchase orders for tools, supplies, and general inventory, total <strong>${totalExpenses.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong>. 
-                  This results in a net income of <strong>${netIncome.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong>. 
-                  The business currently holds <strong>${totalAssets.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong> in physical inventory assets, 
-                  ensuring readiness for upcoming projects and custom builds.
-                </p>
-              </div>
+
             </div>
           </motion.div>
         )}
