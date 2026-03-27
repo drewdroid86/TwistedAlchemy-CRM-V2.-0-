@@ -71,20 +71,9 @@ export default function Dashboard() {
   return (
     <div className="space-y-8">
       {/* Welcome Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-3xl font-serif italic font-bold text-stone-900">Shop Floor Overview</h2>
-          <p className="text-stone-500 mt-1">Here's what's happening across {filterBrand === 'All' ? 'both brands' : filterBrand} today.</p>
-        </div>
-        <select
-          className="bg-white border border-stone-200 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-stone-900/10 transition-all text-sm font-semibold text-stone-600 shadow-sm"
-          value={filterBrand}
-          onChange={(e) => setFilterBrand(e.target.value as Brand | 'All')}
-        >
-          <option value="All">All Brands</option>
-          <option value="Twisted Twig">Twisted Twig</option>
-          <option value="Wood Grain Alchemist">Wood Grain Alchemist</option>
-        </select>
+      <div>
+        <h2 className="text-3xl font-serif italic font-bold text-slate-900">Shop Floor Overview</h2>
+        <p className="text-slate-600 mt-1">Here's what's happening across both brands today.</p>
       </div>
 
       {/* Stats Grid */}
@@ -102,8 +91,8 @@ export default function Dashboard() {
                 <stat.icon size={24} />
               </div>
             </div>
-            <p className="text-stone-500 text-sm font-medium">{stat.label}</p>
-            <h3 className="text-2xl font-bold text-stone-900 mt-1">{stat.value}</h3>
+            <p className="text-slate-500 text-sm font-medium">{stat.label}</p>
+            <h3 className="text-2xl font-bold text-slate-900 mt-1">{stat.value}</h3>
           </motion.div>
         ))}
       </div>
@@ -111,8 +100,8 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Shop Notes (Communication Hub) */}
         <div className="lg:col-span-1 card-refined flex flex-col h-[500px] overflow-hidden">
-          <div className="p-6 border-b border-stone-100 flex items-center gap-2 bg-stone-50">
-            <MessageSquare size={20} className="text-stone-400" />
+          <div className="p-6 border-b border-slate-100 flex items-center gap-2 bg-slate-50">
+            <MessageSquare size={20} className="text-slate-500" />
             <h3 className="text-lg font-serif italic font-bold text-stone-900">Shop Notes</h3>
           </div>
           
@@ -124,7 +113,7 @@ export default function Dashboard() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95 }}
-                  className="bg-stone-50 p-4 rounded-2xl border border-stone-100 group relative"
+                  className="bg-slate-50 p-4 rounded-2xl border border-slate-100 group relative"
                 >
                   <p className="text-sm text-stone-800 mb-2">{note.text}</p>
                   <div className="flex justify-between items-center text-[10px] text-stone-400 font-bold uppercase tracking-wider">
@@ -159,7 +148,7 @@ export default function Dashboard() {
               <button 
                 type="submit"
                 disabled={!newNote.trim()}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-olive-accent text-white rounded-lg hover:opacity-90 disabled:opacity-50 transition-colors"
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-accent text-white rounded-lg hover:opacity-90 disabled:opacity-50 transition-colors"
               >
                 <Send size={14} />
               </button>
