@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { subscribeToCollection, createDocument, updateDocument, updateArrayField } from '../services/firebaseService';
 import { Project, Brand, Customer, PricingStrategy, InventoryItem } from '../types';
 import { Plus, Search, Filter, Hammer, Clock, CheckCircle2, AlertCircle, DollarSign, ChevronRight, X, Calculator, Camera, Image as ImageIcon } from 'lucide-react';
@@ -16,6 +16,8 @@ const PRICING_STRATEGIES: { id: PricingStrategy; desc: string }[] = [
   { id: 'Bundle', desc: 'Pricing a group of items together' },
   { id: 'None', desc: 'No specific strategy selected' }
 ];
+
+const KANBAN_STATUSES: Project['status'][] = ['Intake', 'Assessment', 'Structural Repair', 'Finishing', 'Complete'];
 
 export default function Projects() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -71,6 +73,20 @@ export default function Projects() {
       unsubInventory();
     };
   }, []);
+
+  const projectsByStatus = useMemo(() => {
+    const groups = KANBAN_STATUSES.reduce((acc, status) => {
+      acc[status] = [];
+      return acc;
+    }, {} as Record<Project['status'], Project[]>);
+
+    projects.forEach(project => {
+      if (groups[project.status]) {
+        groups[project.status].push(project);
+      }
+    });
+    return groups;
+  }, [projects]);
 
   const handleGenerateInvoice = (project: Project) => {
     const customer = customers.find(c => c.id === project.client_id);
@@ -186,8 +202,8 @@ export default function Projects() {
 
       {/* Project Kanban Board */}
       <div className="flex gap-6 overflow-x-auto pb-4 snap-x">
-        {['Intake', 'Assessment', 'Structural Repair', 'Finishing', 'Complete'].map((status) => {
-          const columnProjects = projects.filter(p => p.status === status);
+        {KANBAN_STATUSES.map((status) => {
+          const columnProjects = projectsByStatus[status] || [];
           return (
             <div key={status} className="flex-none w-80 snap-start flex flex-col h-[calc(100vh-200px)]">
               <div className="flex items-center justify-between mb-4">
