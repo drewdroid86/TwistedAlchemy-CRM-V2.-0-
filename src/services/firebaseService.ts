@@ -20,6 +20,7 @@ import {
   arrayRemove
 } from 'firebase/firestore';
 import { db } from '../firebase';
+export { db };
 
 export enum OperationType {
   CREATE = 'create',
