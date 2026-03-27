@@ -61,6 +61,10 @@ service cloud.firestore {
              data.contact is string && data.contact.size() > 0 && data.contact.size() < 200;
     }
 
+    function isValidPurchaseOrder(data) {
+      return data.brand in ['Twisted Twig', 'Wood Grain Alchemist'];
+    }
+
     // ===============================================================
     // Rules
     // ===============================================================
@@ -107,8 +111,8 @@ service cloud.firestore {
     // Purchase Orders
     match /purchase_orders/{poId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidPurchaseOrder(request.resource.data);
+      allow update: if isAuthenticated() && isValidPurchaseOrder(request.resource.data);
       allow delete: if isAdmin();
     }
   }

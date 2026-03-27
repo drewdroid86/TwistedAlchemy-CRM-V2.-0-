@@ -24,6 +24,8 @@ export default function Purchasing() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterBrand, setFilterBrand] = useState<Brand | 'All'>('All');
+  const [filterStatus, setFilterStatus] = useState<PurchaseOrder['status'] | 'All'>('All');
   
   const [newPO, setNewPO] = useState<Partial<PurchaseOrder>>({
     brand: 'Twisted Twig',
@@ -45,6 +47,7 @@ export default function Purchasing() {
     e.preventDefault();
     await createDocument('purchase_orders', {
       ...newPO,
+      date: newPO.date ? new Date(newPO.date).toISOString() : new Date().toISOString(),
       createdAt: new Date().toISOString()
     } as PurchaseOrder);
     setIsModalOpen(false);
@@ -57,6 +60,14 @@ export default function Purchasing() {
       items: [],
       notes: ''
     });
+  };
+
+  const updateStatus = async (id: string, newStatus: PurchaseOrder['status']) => {
+    const payload: Partial<PurchaseOrder> = { status: newStatus };
+    if (newStatus === 'Received') {
+      payload.received_date = new Date().toISOString();
+    }
+    await updateDocument('purchase_orders', id, payload);
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -89,10 +100,12 @@ export default function Purchasing() {
     }
   };
 
-  const filteredPOs = pos.filter(p => 
-    p.vendor.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.brand.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredPOs = pos.filter(p => {
+    const matchesSearch = p.vendor.toLowerCase().includes(searchTerm.toLowerCase()) || p.brand.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesBrand = filterBrand === 'All' || p.brand === filterBrand;
+    const matchesStatus = filterStatus === 'All' || p.status === filterStatus;
+    return matchesSearch && matchesBrand && matchesStatus;
+  });
 
   return (
     <div className="space-y-8">
@@ -121,15 +134,37 @@ export default function Purchasing() {
 
       {/* Search & Stats */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <div className="lg:col-span-3 relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={20} />
-          <input
-            type="text"
-            placeholder="Search by vendor or brand..."
-            className="w-full pl-12 pr-4 py-4 bg-white border border-stone-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-stone-900/10 transition-all shadow-sm"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+        <div className="lg:col-span-3 flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={20} />
+            <input
+              type="text"
+              placeholder="Search by vendor or brand..."
+              className="w-full pl-12 pr-4 py-4 bg-white border border-stone-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-stone-900/10 transition-all shadow-sm"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <select
+            className="bg-white border border-stone-200 rounded-2xl px-4 py-4 focus:outline-none focus:ring-2 focus:ring-stone-900/10 transition-all shadow-sm text-sm font-bold text-stone-600"
+            value={filterBrand}
+            onChange={(e) => setFilterBrand(e.target.value as Brand | 'All')}
+          >
+            <option value="All">All Brands</option>
+            <option value="Twisted Twig">Twisted Twig</option>
+            <option value="Wood Grain Alchemist">Wood Grain Alchemist</option>
+          </select>
+          <select
+            className="bg-white border border-stone-200 rounded-2xl px-4 py-4 focus:outline-none focus:ring-2 focus:ring-stone-900/10 transition-all shadow-sm text-sm font-bold text-stone-600"
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value as PurchaseOrder['status'] | 'All')}
+          >
+            <option value="All">All Statuses</option>
+            <option value="Draft">Draft</option>
+            <option value="Ordered">Ordered</option>
+            <option value="Received">Received</option>
+            <option value="Cancelled">Cancelled</option>
+          </select>
         </div>
         <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 flex items-center justify-between">
           <div>
@@ -182,13 +217,21 @@ export default function Purchasing() {
                     ${po.total_amount.toLocaleString()}
                   </td>
                   <td className="px-6 py-4">
-                    <span className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 w-fit ${
-                      po.status === 'Received' ? 'bg-emerald-100 text-emerald-700' : 
-                      po.status === 'Ordered' ? 'bg-blue-100 text-blue-700' : 'bg-stone-100 text-stone-700'
-                    }`}>
-                      {po.status === 'Received' ? <CheckCircle2 size={12} /> : <Clock size={12} />}
-                      {po.status}
-                    </span>
+                    <select
+                      className={`px-2 py-1 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-1 w-fit border-0 focus:ring-2 focus:ring-stone-900/10 cursor-pointer ${
+                        po.status === 'Received' ? 'bg-emerald-100 text-emerald-700' :
+                        po.status === 'Ordered' ? 'bg-blue-100 text-blue-700' :
+                        po.status === 'Cancelled' ? 'bg-red-100 text-red-700' :
+                        'bg-stone-100 text-stone-700'
+                      }`}
+                      value={po.status}
+                      onChange={(e) => updateStatus(po.id!, e.target.value as PurchaseOrder['status'])}
+                    >
+                      <option value="Draft">Draft</option>
+                      <option value="Ordered">Ordered</option>
+                      <option value="Received">Received</option>
+                      <option value="Cancelled">Cancelled</option>
+                    </select>
                   </td>
                   <td className="px-6 py-4 text-right">
                     <button className="p-2 text-stone-400 hover:text-stone-900 transition-colors">
@@ -271,7 +314,7 @@ export default function Purchasing() {
                       type="date"
                       required
                       className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 focus:outline-none"
-                      value={newPO.date}
+                      value={newPO.date?.split('T')[0]}
                       onChange={(e) => setNewPO({...newPO, date: e.target.value})}
                     />
                   </div>

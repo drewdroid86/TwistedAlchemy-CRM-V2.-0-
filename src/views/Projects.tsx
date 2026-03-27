@@ -20,6 +20,7 @@ const PRICING_STRATEGIES: { id: PricingStrategy; desc: string }[] = [
 export default function Projects() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [filterBrand, setFilterBrand] = useState<Brand | 'All'>('Twisted Twig');
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isHistoricalModalOpen, setIsHistoricalModalOpen] = useState(false);
@@ -98,22 +99,59 @@ export default function Projects() {
 
   const handleCreateHistorical = async (e: React.FormEvent) => {
     e.preventDefault();
-    await createDocument('projects', {
+    const docId = await createDocument('projects', {
       ...historicalSale,
       createdAt: new Date(historicalSale.createdAt!).toISOString(),
       updatedAt: new Date().toISOString()
     });
+    if (historicalSale.client_id) {
+      await updateArrayField('customers', historicalSale.client_id, 'purchase_history', docId, 'add');
+    }
     setIsHistoricalModalOpen(false);
   };
 
+  const [inlineError, setInlineError] = useState<{id: string, message: string} | null>(null);
+
   const updateStatus = async (id: string, status: Project['status']) => {
-    await updateDocument('projects', id, { status });
+    const project = projects.find(p => p.id === id);
+    if (status === 'Complete') {
+      if (!project?.financials?.actual_sale_price || project.financials.actual_sale_price <= 0) {
+        setInlineError({ id, message: 'Sale price is required to mark complete' });
+        setTimeout(() => setInlineError(null), 3000);
+        return;
+      }
+      await updateDocument('projects', id, {
+        status,
+        date_completed: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      });
+    } else {
+      await updateDocument('projects', id, {
+        status,
+        updatedAt: new Date().toISOString()
+      });
+    }
+    setInlineError(null);
   };
 
   const updateFinancials = async (id: string, financials: Project['financials']) => {
     await updateDocument('projects', id, { financials });
     if (selectedProject?.id === id) {
       setSelectedProject({ ...selectedProject, financials });
+    }
+  };
+
+  const updateClient = async (id: string, client_id: string) => {
+    const project = projects.find(p => p.id === id);
+    if (project?.client_id && project.client_id !== client_id) {
+      await updateArrayField('customers', project.client_id, 'purchase_history', id, 'remove');
+    }
+    await updateDocument('projects', id, { client_id });
+    if (client_id) {
+      await updateArrayField('customers', client_id, 'purchase_history', id, 'add');
+    }
+    if (selectedProject?.id === id) {
+      setSelectedProject({ ...selectedProject, client_id });
     }
   };
 
@@ -167,7 +205,18 @@ export default function Projects() {
       </AnimatePresence>
 
       <div className="flex justify-between items-center">
-        <h3 className="text-xl font-semibold text-text-primary">Active Work Orders</h3>
+        <div className="flex items-center gap-4">
+          <h3 className="text-xl font-semibold text-text-primary">Active Work Orders</h3>
+          <select
+            className="bg-app-bg border border-border rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-accent/20 transition-all text-sm font-medium text-text-secondary"
+            value={filterBrand}
+            onChange={(e) => setFilterBrand(e.target.value as Brand | 'All')}
+          >
+            <option value="All">All Brands</option>
+            <option value="Twisted Twig">Twisted Twig</option>
+            <option value="Wood Grain Alchemist">Wood Grain Alchemist</option>
+          </select>
+        </div>
         <div className="flex gap-2">
           <button
             onClick={() => setIsHistoricalModalOpen(true)}
@@ -187,7 +236,7 @@ export default function Projects() {
       {/* Project Kanban Board */}
       <div className="flex gap-6 overflow-x-auto pb-4 snap-x">
         {['Intake', 'Assessment', 'Structural Repair', 'Finishing', 'Complete'].map((status) => {
-          const columnProjects = projects.filter(p => p.status === status);
+          const columnProjects = projects.filter(p => p.status === status && (filterBrand === 'All' || p.brand === filterBrand));
           return (
             <div key={status} className="flex-none w-80 snap-start flex flex-col h-[calc(100vh-200px)]">
               <div className="flex items-center justify-between mb-4">
@@ -233,6 +282,12 @@ export default function Projects() {
                       <p className="text-xs text-stone-500 mb-4 flex items-center gap-1">
                         <Clock size={12} /> {new Date(project.createdAt).toLocaleDateString()}
                       </p>
+
+                      {inlineError?.id === project.id && (
+                        <div className="mb-2 text-xs font-bold text-red-500 bg-red-50 p-2 rounded-lg border border-red-100">
+                          {inlineError.message}
+                        </div>
+                      )}
 
                       <div className="flex justify-between items-center pt-3 border-t border-stone-100">
                         <div className="flex items-center gap-2">
@@ -301,6 +356,11 @@ export default function Projects() {
               </div>
               
               <div className="p-8 overflow-y-auto space-y-8">
+                {inlineError?.id === selectedProject.id && (
+                  <div className="mb-4 text-sm font-bold text-red-500 bg-red-50 p-3 rounded-xl border border-red-100">
+                    {inlineError.message}
+                  </div>
+                )}
                 {/* Status Stepper */}
                 <div className="flex justify-between relative">
                   <div className="absolute top-1/2 left-0 w-full h-0.5 bg-stone-100 -translate-y-1/2 -z-10" />

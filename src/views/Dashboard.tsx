@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { subscribeToCollection, createDocument, deleteDocument } from '../services/firebaseService';
-import { Project, InventoryItem, ShopNote } from '../types';
+import { Project, InventoryItem, ShopNote, Brand } from '../types';
 import { 
   TrendingUp, 
   Clock, 
@@ -21,6 +21,7 @@ export default function Dashboard() {
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [notes, setNotes] = useState<ShopNote[]>([]);
   const [newNote, setNewNote] = useState('');
+  const [filterBrand, setFilterBrand] = useState<Brand | 'All'>('Twisted Twig');
 
   useEffect(() => {
     const unsubProjects = subscribeToCollection<Project>('projects', setProjects);
@@ -36,13 +37,13 @@ export default function Dashboard() {
     };
   }, []);
 
-  const activeProjects = projects.filter(p => p.status !== 'Complete');
-  const completedProjects = projects.filter(p => p.status === 'Complete');
+  const activeProjects = projects.filter(p => p.status !== 'Complete' && (filterBrand === 'All' || p.brand === filterBrand));
+  const completedProjects = projects.filter(p => p.status === 'Complete' && (filterBrand === 'All' || p.brand === filterBrand));
   
   const totalWIPValue = activeProjects.reduce((acc, p) => acc + (p.financials.target_sale_price || 0), 0);
   const totalRevenue = completedProjects.reduce((acc, p) => acc + (p.financials.actual_sale_price || 0), 0);
   
-  const lowStock = inventory.filter(i => i.quantity < 5);
+  const lowStock = inventory.filter(i => i.quantity <= 2 && (filterBrand === 'All' || i.owner === filterBrand));
 
   const stats = [
     { label: 'Active Projects', value: activeProjects.length, icon: Hammer, color: 'bg-app-bg text-text-secondary' },
@@ -70,9 +71,20 @@ export default function Dashboard() {
   return (
     <div className="space-y-8">
       {/* Welcome Header */}
-      <div>
-        <h2 className="text-3xl font-serif italic font-bold text-stone-900">Shop Floor Overview</h2>
-        <p className="text-stone-500 mt-1">Here's what's happening across both brands today.</p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-3xl font-serif italic font-bold text-stone-900">Shop Floor Overview</h2>
+          <p className="text-stone-500 mt-1">Here's what's happening across {filterBrand === 'All' ? 'both brands' : filterBrand} today.</p>
+        </div>
+        <select
+          className="bg-white border border-stone-200 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-stone-900/10 transition-all text-sm font-semibold text-stone-600 shadow-sm"
+          value={filterBrand}
+          onChange={(e) => setFilterBrand(e.target.value as Brand | 'All')}
+        >
+          <option value="All">All Brands</option>
+          <option value="Twisted Twig">Twisted Twig</option>
+          <option value="Wood Grain Alchemist">Wood Grain Alchemist</option>
+        </select>
       </div>
 
       {/* Stats Grid */}

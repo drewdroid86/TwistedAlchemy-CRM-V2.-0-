@@ -51,6 +51,7 @@ export interface Project {
   images?: string[];
   createdAt: string;
   updatedAt: string;
+  date_completed?: string;
 }
 
 export interface Customer {
@@ -82,4 +83,5 @@ export interface PurchaseOrder {
   receipt_url?: string;
   notes?: string;
   createdAt: string;
+  received_date?: string;
 }
