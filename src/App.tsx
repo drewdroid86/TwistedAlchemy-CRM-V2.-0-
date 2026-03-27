@@ -28,7 +28,7 @@ import Dashboard from './views/Dashboard';
 import Inventory from './views/Inventory';
 import Projects from './views/Projects';
 import Customers from './views/Customers';
-import Reports from './views/Reports';
+import Financials from './views/Financials';
 import Purchasing from './views/Purchasing';
 import Help from './views/Help';
 
@@ -104,9 +104,19 @@ export default function App() {
     { id: 'projects', label: 'Projects', icon: Hammer },
     { id: 'purchasing', label: 'Purchasing', icon: ShoppingCart },
     { id: 'customers', label: 'Customers', icon: Users },
-    { id: 'reports', label: 'Reports', icon: FileText },
+    { id: 'reports', label: 'Financials', icon: FileText },
     { id: 'help', label: 'Help & Guide', icon: HelpCircle },
   ];
+
+  const viewLabels: Record<View, string> = {
+    dashboard: 'Dashboard',
+    inventory: 'Inventory',
+    projects: 'Projects',
+    purchasing: 'Purchasing',
+    customers: 'Customers',
+    reports: 'Financials',
+    help: 'Help & Guide'
+  };
 
   return (
     <ErrorBoundary>
@@ -169,8 +179,8 @@ export default function App() {
         {/* Main Content */}
         <main className="flex-1 overflow-auto">
           <header className="h-16 bg-white border-b border-border flex items-center justify-between px-8 sticky top-0 z-10">
-            <h2 className="text-lg font-semibold text-text-primary capitalize">
-              {activeView}
+            <h2 className="text-lg font-semibold text-text-primary">
+              {viewLabels[activeView]}
             </h2>
             <div className="flex items-center gap-4">
               <div className="text-right hidden sm:block">
@@ -199,7 +209,7 @@ export default function App() {
                 {activeView === 'projects' && <Projects />}
                 {activeView === 'purchasing' && <Purchasing />}
                 {activeView === 'customers' && <Customers />}
-                {activeView === 'reports' && <Reports />}
+                {activeView === 'reports' && <Financials />}
                 {activeView === 'help' && <Help />}
               </motion.div>
             </AnimatePresence>
