@@ -54,6 +54,7 @@ export interface Project {
   images?: string[];
   createdAt: string;
   updatedAt: string;
+  completedAt?: string;
 }
 
 export interface Customer {
