@@ -12,6 +12,7 @@ import {
   onSnapshot, 
   query, 
   where,
+  getDocs,
   Timestamp,
   DocumentData,
   QueryConstraint,
