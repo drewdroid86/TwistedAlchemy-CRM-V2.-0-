@@ -118,7 +118,7 @@ export default function Financials() {
 
   const completedProjects = projects.filter(p => {
     if (p.status !== 'Complete') return false;
-    const date = new Date(p.createdAt);
+    const date = new Date(p.completedAt ?? p.updatedAt);
     return date.getMonth() === filterMonth && date.getFullYear() === filterYear;
   });
   
@@ -135,8 +135,8 @@ export default function Financials() {
   const grossProfit = totalRevenue - totalCOGS;
 
   // Operating Expenses (Purchase Orders)
-  const expensesWGA = purchaseOrders.filter(po => po.brand === 'Wood Grain Alchemist').reduce((acc, po) => acc + po.total_amount, 0);
-  const expensesTT = purchaseOrders.filter(po => po.brand === 'Twisted Twig').reduce((acc, po) => acc + po.total_amount, 0);
+  const expensesWGA = purchaseOrders.filter(po => po.brand === 'Wood Grain Alchemist' && new Date(po.date).getMonth() === filterMonth && new Date(po.date).getFullYear() === filterYear).reduce((acc, po) => acc + po.total_amount, 0);
+  const expensesTT = purchaseOrders.filter(po => po.brand === 'Twisted Twig' && new Date(po.date).getMonth() === filterMonth && new Date(po.date).getFullYear() === filterYear).reduce((acc, po) => acc + po.total_amount, 0);
   const totalExpenses = expensesWGA + expensesTT;
 
   const netIncome = grossProfit - totalExpenses;
