@@ -30,18 +30,18 @@ export default function Customers() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
         <div className="relative flex-1 w-full max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" size={18} />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
           <input
             type="text"
             placeholder="Search customers..."
-            className="w-full pl-10 pr-4 py-2 bg-white border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-stone-900/10 transition-all"
+            className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900/10 transition-all"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
         <button
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 bg-olive-accent text-white px-4 py-2 rounded-xl text-sm font-semibold hover:opacity-90 transition-all"
+          className="flex items-center gap-2 bg-accent text-white px-4 py-2 rounded-xl text-sm font-semibold hover:opacity-90 transition-all"
         >
           <Plus size={18} /> Add Customer
         </button>
@@ -56,17 +56,17 @@ export default function Customers() {
             className="card-refined p-6 hover:shadow-lg transition-all"
           >
             <div className="flex items-center gap-4 mb-6">
-              <div className="w-12 h-12 bg-stone-100 rounded-full flex items-center justify-center text-stone-400">
+              <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center text-slate-500">
                 <User size={24} />
               </div>
               <div>
-                <h3 className="font-bold text-stone-900">{customer.name}</h3>
-                <p className="text-xs text-stone-500">Customer ID: {customer.id?.slice(-6).toUpperCase()}</p>
+                <h3 className="font-bold text-slate-900">{customer.name}</h3>
+                <p className="text-xs text-slate-600">Customer ID: {customer.id?.slice(-6).toUpperCase()}</p>
               </div>
             </div>
 
             <div className="space-y-3">
-              <div className="flex items-center gap-3 text-sm text-stone-600">
+              <div className="flex items-center gap-3 text-sm text-slate-700">
                 <Mail size={16} className="text-stone-400" />
                 <span>{customer.contact}</span>
               </div>
@@ -76,7 +76,7 @@ export default function Customers() {
               </div>
             </div>
 
-            <button className="w-full mt-6 py-2 border border-stone-200 rounded-xl text-sm font-semibold text-stone-600 hover:bg-stone-50 transition-colors">
+            <button className="w-full mt-6 py-2 border border-stone-200 rounded-xl text-sm font-semibold text-stone-600 hover:bg-slate-50 transition-colors">
               View History
             </button>
           </motion.div>
@@ -85,13 +85,13 @@ export default function Customers() {
 
       {/* Add Customer Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-stone-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <motion.div 
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden"
           >
-            <div className="p-6 border-b border-stone-100 flex justify-between items-center">
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center">
               <h3 className="text-xl font-serif italic font-bold text-stone-900">Add New Customer</h3>
               <button onClick={() => setIsModalOpen(false)} className="text-stone-400 hover:text-stone-900">
                 <X size={24} />
