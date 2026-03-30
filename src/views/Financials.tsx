@@ -24,6 +24,9 @@ export default function Financials() {
   const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
   const [activeReport, setActiveReport] = useState<'pnl' | 'balanceSheet' | 'digitize'>('pnl');
 
+  const [filterMonth, setFilterMonth] = useState<number>(new Date().getMonth());
+  const [filterYear, setFilterYear] = useState<number>(new Date().getFullYear());
+
   // Historical Data Entry State
   const [saleDate, setSaleDate] = useState(new Date().toISOString().split('T')[0]);
   const [saleBrand, setSaleBrand] = useState<Brand>('Wood Grain Alchemist');
@@ -42,6 +45,8 @@ export default function Financials() {
     try {
       await createDocument('projects', {
         brand: saleBrand,
+        title: saleName,
+        description: 'Historical Record',
         status: 'Complete',
         assigned_to: 'Historical',
         financials: {
@@ -56,7 +61,8 @@ export default function Financials() {
           notes: saleName || 'Historical Sale'
         }],
         createdAt: new Date(saleDate).toISOString(),
-        updatedAt: new Date(saleDate).toISOString()
+        updatedAt: new Date(saleDate).toISOString(),
+        completedAt: new Date(saleDate).toISOString()
       });
       setSaleRevenue('');
       setSaleCOGS('');
@@ -110,7 +116,11 @@ export default function Financials() {
 
   // --- Data Processing for Financials ---
 
-  const completedProjects = projects.filter(p => p.status === 'Complete');
+  const completedProjects = projects.filter(p => {
+    if (p.status !== 'Complete') return false;
+    const date = new Date(p.completedAt ?? p.updatedAt);
+    return date.getMonth() === filterMonth && date.getFullYear() === filterYear;
+  });
   
   // Revenue
   const revenueWGA = completedProjects.filter(p => p.brand === 'Wood Grain Alchemist').reduce((acc, p) => acc + (p.financials.actual_sale_price || 0), 0);
@@ -125,8 +135,8 @@ export default function Financials() {
   const grossProfit = totalRevenue - totalCOGS;
 
   // Operating Expenses (Purchase Orders)
-  const expensesWGA = purchaseOrders.filter(po => po.brand === 'Wood Grain Alchemist').reduce((acc, po) => acc + po.total_amount, 0);
-  const expensesTT = purchaseOrders.filter(po => po.brand === 'Twisted Twig').reduce((acc, po) => acc + po.total_amount, 0);
+  const expensesWGA = purchaseOrders.filter(po => po.brand === 'Wood Grain Alchemist' && new Date(po.date).getMonth() === filterMonth && new Date(po.date).getFullYear() === filterYear).reduce((acc, po) => acc + po.total_amount, 0);
+  const expensesTT = purchaseOrders.filter(po => po.brand === 'Twisted Twig' && new Date(po.date).getMonth() === filterMonth && new Date(po.date).getFullYear() === filterYear).reduce((acc, po) => acc + po.total_amount, 0);
   const totalExpenses = expensesWGA + expensesTT;
 
   const netIncome = grossProfit - totalExpenses;
@@ -389,6 +399,41 @@ export default function Financials() {
         {/* PROFIT & LOSS */}
         {activeReport === 'pnl' && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
+            {/* Filter UI */}
+            <div className="flex items-center gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm max-w-4xl mx-auto">
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-bold text-slate-500 uppercase">Month:</label>
+                <select
+                  value={filterMonth}
+                  onChange={(e) => setFilterMonth(Number(e.target.value))}
+                  className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-accent"
+                >
+                  {Array.from({ length: 12 }, (_, i) => (
+                    <option key={i} value={i}>
+                      {new Date(0, i).toLocaleString('default', { month: 'long' })}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-bold text-slate-500 uppercase">Year:</label>
+                <select
+                  value={filterYear}
+                  onChange={(e) => setFilterYear(Number(e.target.value))}
+                  className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-accent"
+                >
+                  {Array.from({ length: 5 }, (_, i) => {
+                    const year = new Date().getFullYear() - i;
+                    return (
+                      <option key={year} value={year}>
+                        {year}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+            </div>
+
             <div className="card-refined p-8 max-w-4xl mx-auto">
               <div className="text-center mb-8">
                 <h3 className="text-2xl font-serif italic font-bold text-slate-900">Profit and Loss Statement</h3>

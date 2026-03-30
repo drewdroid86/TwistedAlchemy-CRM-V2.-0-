@@ -108,9 +108,10 @@ export const getRevenueThisMonthVsLastMonth = async (): Promise<RevenueCompariso
   
   snapshot.forEach(doc => {
     const project = doc.data() as Project;
-    if (!project.updatedAt) return;
+    const dateToUse = project.completedAt || project.updatedAt;
+    if (!dateToUse) return;
     
-    const completedDate = new Date(project.updatedAt);
+    const completedDate = new Date(dateToUse);
     const revenue = project.financials?.actual_sale_price || 0;
     
     if (completedDate.getMonth() === currentMonth && completedDate.getFullYear() === currentYear) {
