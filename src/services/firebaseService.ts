@@ -20,6 +20,7 @@ import {
   arrayRemove
 } from 'firebase/firestore';
 import { db } from '../firebase';
+export { db };
 
 export enum OperationType {
   CREATE = 'create',
@@ -68,8 +69,8 @@ export const createDocument = async <T extends DocumentData>(path: string, data:
   try {
     const docRef = await addDoc(collection(db, path), {
       ...data,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      createdAt: data.createdAt ?? new Date().toISOString(),
+      updatedAt: data.updatedAt ?? new Date().toISOString()
     });
     return docRef.id;
   } catch (error) {
