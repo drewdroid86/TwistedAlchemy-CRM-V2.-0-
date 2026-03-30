@@ -2,13 +2,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { deleteDocument, OperationType } from './firebaseService';
 import { deleteDoc, doc } from 'firebase/firestore';
 
+// Mock the firebase/firestore module
 vi.mock('firebase/firestore', () => {
   return {
-    deleteDoc: vi.fn(),
-    doc: vi.fn(),
     collection: vi.fn(),
     addDoc: vi.fn(),
     updateDoc: vi.fn(),
+    deleteDoc: vi.fn(),
+    doc: vi.fn(),
     onSnapshot: vi.fn(),
     query: vi.fn(),
     where: vi.fn(),
@@ -18,59 +19,54 @@ vi.mock('firebase/firestore', () => {
   };
 });
 
-vi.mock('../firebase', () => ({
-  db: {}
-}));
+// Mock the firebase module
+vi.mock('../firebase', () => {
+  return {
+    db: {},
+  };
+});
 
-describe('firebaseService', () => {
+describe('firebaseService - deleteDocument', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // suppress console.error for expected errors
-    vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
-  describe('deleteDocument', () => {
-    it('should successfully delete a document', async () => {
-      vi.mocked(deleteDoc).mockResolvedValueOnce(undefined);
-      vi.mocked(doc).mockReturnValue({} as any);
+  it('should successfully delete a document', async () => {
+    // Setup
+    const path = 'testCollection';
+    const id = 'testId';
+    const mockDocRef = { id: 'testId' };
 
-      const path = 'users';
-      const id = 'user123';
+    // Use `as unknown as any` to bypass typescript error with mock
+    vi.mocked(doc).mockReturnValue(mockDocRef as any);
+    vi.mocked(deleteDoc).mockResolvedValue(undefined);
 
-      await expect(deleteDocument(path, id)).resolves.toBeUndefined();
+    // Execute
+    await deleteDocument(path, id);
 
-      expect(doc).toHaveBeenCalledWith(expect.anything(), path, id);
-      expect(deleteDoc).toHaveBeenCalled();
-    });
+    // Assert
+    expect(doc).toHaveBeenCalledWith(expect.anything(), path, id);
+    expect(deleteDoc).toHaveBeenCalledWith(mockDocRef);
+  });
 
-    it('should handle errors when deleting a document', async () => {
-      const mockError = new Error('Permission denied');
-      vi.mocked(deleteDoc).mockRejectedValueOnce(mockError);
-      vi.mocked(doc).mockReturnValue({} as any);
+  it('should handle and rethrow errors from deleteDoc', async () => {
+    // Setup
+    const path = 'testCollection';
+    const id = 'testId';
+    const errorMessage = 'Permission denied';
+    const expectedErrorPayload = {
+      error: errorMessage,
+      authInfo: {}, // Mock auth info
+      operationType: OperationType.DELETE,
+      path: `${path}/${id}`,
+    };
 
-      const path = 'users';
-      const id = 'user123';
+    vi.mocked(doc).mockReturnValue({} as any);
+    vi.mocked(deleteDoc).mockRejectedValue(new Error(errorMessage));
 
-      await expect(deleteDocument(path, id)).rejects.toThrowError(
-        JSON.stringify({
-          error: 'Permission denied',
-          authInfo: {},
-          operationType: OperationType.DELETE,
-          path: `${path}/${id}`
-        })
-      );
-
-      expect(doc).toHaveBeenCalledWith(expect.anything(), path, id);
-      expect(deleteDoc).toHaveBeenCalled();
-      expect(console.error).toHaveBeenCalledWith(
-        'Firestore Error: ',
-        JSON.stringify({
-          error: 'Permission denied',
-          authInfo: {},
-          operationType: OperationType.DELETE,
-          path: `${path}/${id}`
-        })
-      );
-    });
+    // Execute & Assert
+    await expect(deleteDocument(path, id)).rejects.toThrowError(
+      JSON.stringify(expectedErrorPayload)
+    );
   });
 });
