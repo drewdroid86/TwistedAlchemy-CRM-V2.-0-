@@ -3,7 +3,7 @@ import { subscribeToCollection } from '../services/firebaseService';
 import { Project, InventoryItem, Customer, Brand } from '../types';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  PieChart, Pie, Cell, LineChart, Line
+  PieChart, Pie, Cell
 } from 'recharts';
 import { 
   FileText, 
