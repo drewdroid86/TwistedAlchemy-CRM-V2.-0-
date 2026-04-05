@@ -1,365 +1,380 @@
 import React, { useState, useEffect } from 'react';
-import { usePurchases } from '../hooks/usePurchases';
-import { Brand, Project, Purchase } from '../types';
+import { subscribeToCollection, createDocument, updateDocument, deleteDocument } from '../services/firebaseService';
+import { PurchaseOrder, Brand, InventoryItem } from '../types';
 import { 
   Plus, 
   Search, 
-  ExternalLink,
-  ChevronRight,
+  FileText, 
+  Camera, 
+  Upload, 
+  CheckCircle2, 
+  Clock, 
   X,
   Trash2,
-  Calendar,
-  Store,
+  ChevronRight,
+  Loader2,
   DollarSign,
-  Briefcase
+  Store
 } from 'lucide-react';
-import { subscribeToCollection } from '../services/firebaseService';
 import { motion, AnimatePresence } from 'motion/react';
+import { processReceiptImage } from '../services/receiptService';
 
 export default function Purchasing() {
-  const { purchases, loading, addPurchase, removePurchase } = usePurchases();
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [ownerFilter, setOwnerFilter] = useState<Brand | 'All'>('All');
+  const [pos, setPos] = useState<PurchaseOrder[]>([]);
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-
-  // Form State
-  const [newPurchase, setNewPurchase] = useState<Omit<Purchase, 'id'>>({
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  
+  const [newPO, setNewPO] = useState<Partial<PurchaseOrder>>({
+    brand: 'Twisted Twig',
     vendor: '',
-    items: [{ description: '', quantity: 1, price: 0 }],
-    total_cost: 0,
     date: new Date().toISOString().split('T')[0],
-    owner: 'Twisted Twig',
-    linked_project_id: ''
+    total_amount: 0,
+    status: 'Draft',
+    items: [],
+    notes: ''
   });
 
   useEffect(() => {
-    const unsub = subscribeToCollection<Project>('projects', setProjects);
-    return () => unsub();
+    const unsubPOs = subscribeToCollection<PurchaseOrder>('purchase_orders', (data) => {
+      setPos(data.sort((a, b) => b.date.localeCompare(a.date)));
+    });
+    const unsubInventory = subscribeToCollection<InventoryItem>('inventory', setInventory);
+    return () => {
+      unsubPOs();
+      unsubInventory();
+    };
   }, []);
 
-  const filteredPurchases = purchases.filter(p => {
-    const matchesSearch = p.vendor.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesOwner = ownerFilter === 'All' || p.owner === ownerFilter;
-    return matchesSearch && matchesOwner;
-  });
-
-  const handleAddItem = () => {
-    setNewPurchase({
-      ...newPurchase,
-      items: [...newPurchase.items, { description: '', quantity: 1, price: 0 }]
-    });
-  };
-
-  const handleRemoveItem = (index: number) => {
-    const newItems = newPurchase.items.filter((_, i) => i !== index);
-    const newTotal = newItems.reduce((acc, item) => acc + (item.quantity * item.price), 0);
-    setNewPurchase({ ...newPurchase, items: newItems, total_cost: newTotal });
-  };
-
-  const handleItemChange = (index: number, field: keyof Purchase['items'][0], value: string | number) => {
-    const newItems = [...newPurchase.items];
-    newItems[index] = { ...newItems[index], [field]: value };
-    const newTotal = newItems.reduce((acc, item) => acc + (item.quantity * item.price), 0);
-    setNewPurchase({ ...newPurchase, items: newItems, total_cost: newTotal });
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    await addPurchase(newPurchase);
+    await createDocument('purchase_orders', {
+      ...newPO,
+      createdAt: new Date().toISOString()
+    } as PurchaseOrder);
     setIsModalOpen(false);
-    setNewPurchase({
+    setNewPO({
+      brand: 'Twisted Twig',
       vendor: '',
-      items: [{ description: '', quantity: 1, price: 0 }],
-      total_cost: 0,
       date: new Date().toISOString().split('T')[0],
-      owner: 'Twisted Twig',
-      linked_project_id: ''
+      total_amount: 0,
+      status: 'Draft',
+      items: [],
+      notes: ''
     });
   };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsProcessing(true);
+    try {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64String = (reader.result as string).split(',')[1];
+        const extractedData = await processReceiptImage(base64String);
+        
+        setNewPO({
+          ...newPO,
+          vendor: extractedData.vendor || '',
+          date: extractedData.date || new Date().toISOString().split('T')[0],
+          total_amount: extractedData.total || 0,
+          items: (extractedData.line_items || []).map((item: any) => ({
+            description: item.description || '',
+            quantity: 1,
+            unit_price: item.amount || 0
+          })),
+          status: 'Received'
+        });
+        setIsModalOpen(true);
+        setIsProcessing(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('Error processing receipt:', error);
+      setIsProcessing(false);
+      alert('Failed to process receipt. Please enter details manually.');
+    }
+  };
+
+  const filteredPOs = pos.filter(p => 
+    p.vendor.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.brand.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] p-6 font-sans">
-      <div className="max-w-7xl mx-auto space-y-8">
-        <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div>
-            <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">Purchasing</h1>
-            <p className="text-slate-500 mt-2 text-lg">Manage vendor purchases and track expenses.</p>
-          </div>
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-3xl font-serif italic font-bold text-slate-900">Purchasing & Receipts</h2>
+          <p className="text-slate-600 mt-1">Track shop expenses and intake receipts.</p>
+        </div>
+        
+        <div className="flex items-center gap-3">
+          <label className="flex items-center gap-2 bg-slate-100 text-slate-900 px-6 py-3 rounded-2xl font-bold hover:bg-slate-200 transition-all cursor-pointer shadow-sm">
+            {isProcessing ? <Loader2 className="animate-spin" size={20} /> : <Camera size={20} />}
+            <span>{isProcessing ? 'Processing...' : 'Snap Receipt'}</span>
+            <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileUpload} disabled={isProcessing} />
+          </label>
+          
           <button 
             onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 bg-[#2563eb] text-white px-6 py-3 rounded-2xl font-bold hover:bg-blue-700 transition-all shadow-lg hover:shadow-xl active:scale-95"
+            className="flex items-center gap-2 bg-accent text-white px-6 py-3 rounded-2xl font-bold hover:opacity-90 transition-all shadow-lg"
           >
-            <Plus size={22} /> Add Purchase
+            <Plus size={20} /> New PO
           </button>
-        </header>
-
-        {/* Filters */}
-        <div className="flex flex-col md:flex-row gap-4 items-center bg-white p-4 rounded-2xl border border-[#e2e8f0] shadow-sm">
-          <div className="relative flex-1 w-full">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-            <input
-              type="text"
-              placeholder="Search by vendor..."
-              className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-[#e2e8f0] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2563eb]/10 focus:bg-white transition-all"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <div className="flex gap-4 w-full md:w-auto">
-            <select
-              className="bg-slate-50 border border-[#e2e8f0] rounded-xl px-4 py-3 text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-[#2563eb]/10 focus:bg-white w-full md:w-64 transition-all"
-              value={ownerFilter}
-              onChange={(e) => setOwnerFilter(e.target.value as Brand | 'All')}
-            >
-              <option value="All">All Brands</option>
-              <option value="Twisted Twig">Twisted Twig</option>
-              <option value="Wood Grain Alchemist">Wood Grain Alchemist</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Data Table */}
-        <div className="bg-white border border-[#e2e8f0] rounded-3xl overflow-hidden shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50 border-b border-[#e2e8f0]">
-                  <th className="px-6 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Date</th>
-                  <th className="px-6 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Vendor</th>
-                  <th className="px-6 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Owner</th>
-                  <th className="px-6 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Project</th>
-                  <th className="px-6 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider text-right">Total Cost</th>
-                  <th className="px-6 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#e2e8f0]">
-                {loading ? (
-                  <tr>
-                    <td colSpan={6} className="px-6 py-16 text-center text-slate-400 italic">Loading purchases...</td>
-                  </tr>
-                ) : filteredPurchases.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="px-6 py-16 text-center text-slate-400 italic">No purchases found matching your filters.</td>
-                  </tr>
-                ) : filteredPurchases.map((purchase) => (
-                  <tr key={purchase.id} className="hover:bg-slate-50 transition-colors group">
-                    <td className="px-6 py-5 text-sm text-slate-600 font-medium">
-                      {new Date(purchase.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                    </td>
-                    <td className="px-6 py-5">
-                      <div className="font-bold text-slate-900 text-lg">{purchase.vendor}</div>
-                      <div className="text-sm text-slate-500 font-medium">{purchase.items.length} item(s) purchased</div>
-                    </td>
-                    <td className="px-6 py-5">
-                      <span className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide ${
-                        purchase.owner === 'Twisted Twig'
-                          ? 'bg-orange-100 text-orange-700'
-                          : 'bg-indigo-100 text-indigo-700'
-                      }`}>
-                        {purchase.owner}
-                      </span>
-                    </td>
-                    <td className="px-6 py-5 text-sm text-slate-600 font-bold">
-                      {purchase.linked_project_id ? (
-                        <div className="flex items-center gap-2 text-[#2563eb] hover:underline cursor-pointer">
-                          <Briefcase size={16} />
-                          Project #{purchase.linked_project_id.slice(-4)}
-                          <ChevronRight size={16} />
-                        </div>
-                      ) : (
-                        <span className="text-slate-400 font-normal italic">—</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-5 text-lg font-black text-slate-900 text-right">
-                      ${purchase.total_cost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </td>
-                    <td className="px-6 py-5 text-right">
-                      <div className="flex justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {purchase.receipt_url && (
-                          <a
-                            href={purchase.receipt_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="p-2 text-slate-400 hover:text-[#2563eb] rounded-xl hover:bg-blue-50 transition-all"
-                          >
-                            <ExternalLink size={20} />
-                          </a>
-                        )}
-                        <button
-                          onClick={() => purchase.id && removePurchase(purchase.id)}
-                          className="p-2 text-slate-400 hover:text-red-600 rounded-xl hover:bg-red-50 transition-all"
-                        >
-                          <Trash2 size={20} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
         </div>
       </div>
 
-      {/* Add Purchase Modal */}
+      {/* Search & Stats */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="lg:col-span-3 relative">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={20} />
+          <input
+            type="text"
+            placeholder="Search by vendor or brand..."
+            className="w-full pl-12 pr-4 py-4 bg-white border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-900/10 transition-all shadow-sm"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 flex items-center justify-between">
+          <div>
+            <p className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Monthly Spend</p>
+            <p className="text-xl font-bold text-emerald-900">
+              ${pos.filter(p => p.date.startsWith(new Date().toISOString().slice(0, 7)))
+                .reduce((acc, p) => acc + p.total_amount, 0).toLocaleString()}
+            </p>
+          </div>
+          <DollarSign className="text-emerald-400" size={24} />
+        </div>
+      </div>
+
+      {/* PO List */}
+      <div className="card-refined overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-100">
+                <th className="px-6 py-4 text-[10px] font-bold text-stone-400 uppercase tracking-widest">Date</th>
+                <th className="px-6 py-4 text-[10px] font-bold text-stone-400 uppercase tracking-widest">Vendor</th>
+                <th className="px-6 py-4 text-[10px] font-bold text-stone-400 uppercase tracking-widest">Brand</th>
+                <th className="px-6 py-4 text-[10px] font-bold text-stone-400 uppercase tracking-widest">Amount</th>
+                <th className="px-6 py-4 text-[10px] font-bold text-stone-400 uppercase tracking-widest">Status</th>
+                <th className="px-6 py-4"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-stone-50">
+              {filteredPOs.map((po) => (
+                <tr key={po.id} className="hover:bg-stone-50/50 transition-colors group">
+                  <td className="px-6 py-4 text-sm text-slate-700 font-medium">
+                    {new Date(po.date).toLocaleDateString()}
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-stone-100 rounded-lg">
+                        <Store size={16} className="text-stone-600" />
+                      </div>
+                      <span className="font-bold text-stone-900">{po.vendor}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${
+                      po.brand === 'Twisted Twig' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'
+                    }`}>
+                      {po.brand}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 font-bold text-stone-900">
+                    ${po.total_amount.toLocaleString()}
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 w-fit ${
+                      po.status === 'Received' ? 'bg-emerald-100 text-emerald-700' : 
+                      po.status === 'Ordered' ? 'bg-blue-100 text-blue-700' : 'bg-stone-100 text-stone-700'
+                    }`}>
+                      {po.status === 'Received' ? <CheckCircle2 size={12} /> : <Clock size={12} />}
+                      {po.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <button className="p-2 text-stone-400 hover:text-stone-900 transition-colors">
+                      <ChevronRight size={20} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {filteredPOs.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-6 py-12 text-center text-stone-400 italic">
+                    No purchase orders found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* New PO Modal */}
       <AnimatePresence>
         {isModalOpen && (
-          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-stone-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-white rounded-[32px] w-full max-w-2xl shadow-2xl border border-[#e2e8f0] overflow-hidden"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col"
             >
-              <div className="p-8 border-b border-[#e2e8f0] flex justify-between items-center bg-slate-50/50">
-                <div>
-                  <h2 className="text-2xl font-black text-slate-900">New Purchase Record</h2>
-                  <p className="text-slate-500 font-medium">Capture expense details and link to projects.</p>
-                </div>
-                <button
-                  onClick={() => setIsModalOpen(false)}
-                  className="p-3 text-slate-400 hover:text-slate-900 bg-white border border-[#e2e8f0] rounded-2xl hover:bg-slate-50 transition-all"
-                >
+              <div className="p-6 border-b border-stone-100 flex justify-between items-center bg-stone-50">
+                <h3 className="text-xl font-serif italic font-bold text-stone-900">Purchase Order Details</h3>
+                <button onClick={() => setIsModalOpen(false)} className="text-stone-400 hover:text-stone-900">
                   <X size={24} />
                 </button>
               </div>
-
-              <form onSubmit={handleSubmit} className="p-8 space-y-8 max-h-[70vh] overflow-y-auto">
-                {/* Basic Info */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                      <Store size={14} /> Vendor Name
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. Home Depot, Rockler"
-                      className="w-full px-5 py-4 bg-slate-50 border border-[#e2e8f0] rounded-2xl focus:outline-none focus:ring-4 focus:ring-[#2563eb]/5 focus:bg-white focus:border-[#2563eb]/30 transition-all font-medium"
-                      value={newPurchase.vendor}
-                      onChange={(e) => setNewPurchase({ ...newPurchase, vendor: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                      <Calendar size={14} /> Date
-                    </label>
-                    <input
-                      type="date"
-                      required
-                      className="w-full px-5 py-4 bg-slate-50 border border-[#e2e8f0] rounded-2xl focus:outline-none focus:ring-4 focus:ring-[#2563eb]/5 focus:bg-white focus:border-[#2563eb]/30 transition-all font-medium"
-                      value={newPurchase.date}
-                      onChange={(e) => setNewPurchase({ ...newPurchase, date: e.target.value })}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                      <Plus size={14} /> Brand Owner
-                    </label>
-                    <select
-                      className="w-full px-5 py-4 bg-slate-50 border border-[#e2e8f0] rounded-2xl focus:outline-none focus:ring-4 focus:ring-[#2563eb]/5 focus:bg-white focus:border-[#2563eb]/30 transition-all font-medium"
-                      value={newPurchase.owner}
-                      onChange={(e) => setNewPurchase({ ...newPurchase, owner: e.target.value as Brand })}
+              
+              <form onSubmit={handleCreate} className="p-8 overflow-y-auto space-y-6">
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-stone-500 uppercase">Brand</label>
+                    <select 
+                      className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 focus:outline-none"
+                      value={newPO.brand}
+                      onChange={(e) => setNewPO({...newPO, brand: e.target.value as Brand})}
                     >
                       <option value="Twisted Twig">Twisted Twig</option>
                       <option value="Wood Grain Alchemist">Wood Grain Alchemist</option>
                     </select>
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                      <Briefcase size={14} /> Linked Project (Optional)
-                    </label>
-                    <select
-                      className="w-full px-5 py-4 bg-slate-50 border border-[#e2e8f0] rounded-2xl focus:outline-none focus:ring-4 focus:ring-[#2563eb]/5 focus:bg-white focus:border-[#2563eb]/30 transition-all font-medium"
-                      value={newPurchase.linked_project_id}
-                      onChange={(e) => setNewPurchase({ ...newPurchase, linked_project_id: e.target.value })}
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-stone-500 uppercase">Status</label>
+                    <select 
+                      className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 focus:outline-none"
+                      value={newPO.status}
+                      onChange={(e) => setNewPO({...newPO, status: e.target.value as any})}
                     >
-                      <option value="">None</option>
-                      {projects.map(p => (
-                        <option key={p.id} value={p.id}>Project #{p.id?.slice(-4)} ({p.brand})</option>
-                      ))}
+                      <option value="Draft">Draft</option>
+                      <option value="Ordered">Ordered</option>
+                      <option value="Received">Received</option>
                     </select>
                   </div>
                 </div>
 
-                {/* Items Section */}
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest">Line Items</h3>
-                    <button
-                      type="button"
-                      onClick={handleAddItem}
-                      className="text-xs font-bold text-[#2563eb] hover:text-blue-700 flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 rounded-lg hover:bg-blue-100 transition-all"
-                    >
-                      <Plus size={14} /> Add Item
-                    </button>
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-stone-500 uppercase">Vendor</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Home Depot, Rockler"
+                      className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 focus:outline-none"
+                      value={newPO.vendor}
+                      onChange={(e) => setNewPO({...newPO, vendor: e.target.value})}
+                    />
                   </div>
-
-                  <div className="space-y-3">
-                    {newPurchase.items.map((item, index) => (
-                      <div key={index} className="flex gap-3 items-start animate-in fade-in slide-in-from-top-2 duration-300">
-                        <div className="flex-[3] space-y-1">
-                          <input
-                            type="text"
-                            placeholder="Description"
-                            required
-                            className="w-full px-4 py-3 bg-slate-50 border border-[#e2e8f0] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2563eb]/10 focus:bg-white transition-all text-sm font-medium"
-                            value={item.description}
-                            onChange={(e) => handleItemChange(index, 'description', e.target.value)}
-                          />
-                        </div>
-                        <div className="w-24 space-y-1">
-                          <input
-                            type="number"
-                            placeholder="Qty"
-                            required
-                            min="1"
-                            className="w-full px-4 py-3 bg-slate-50 border border-[#e2e8f0] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2563eb]/10 focus:bg-white transition-all text-sm font-medium"
-                            value={item.quantity}
-                            onChange={(e) => handleItemChange(index, 'quantity', parseInt(e.target.value) || 0)}
-                          />
-                        </div>
-                        <div className="w-32 space-y-1 relative">
-                          <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-                          <input
-                            type="number"
-                            placeholder="Price"
-                            required
-                            step="0.01"
-                            className="w-full pl-8 pr-4 py-3 bg-slate-50 border border-[#e2e8f0] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2563eb]/10 focus:bg-white transition-all text-sm font-medium"
-                            value={item.price}
-                            onChange={(e) => handleItemChange(index, 'price', parseFloat(e.target.value) || 0)}
-                          />
-                        </div>
-                        {newPurchase.items.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveItem(index)}
-                            className="p-3 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
-                          >
-                            <Trash2 size={18} />
-                          </button>
-                        )}
-                      </div>
-                    ))}
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-stone-500 uppercase">Date</label>
+                    <input
+                      type="date"
+                      required
+                      className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 focus:outline-none"
+                      value={newPO.date}
+                      onChange={(e) => setNewPO({...newPO, date: e.target.value})}
+                    />
                   </div>
                 </div>
 
-                {/* Footer / Summary */}
-                <div className="pt-8 border-t border-[#e2e8f0] flex flex-col md:flex-row justify-between items-center gap-6">
-                  <div className="flex items-center gap-4 bg-slate-900 text-white px-8 py-4 rounded-[24px]">
-                    <div className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Total Expense</div>
-                    <div className="text-3xl font-black">${newPurchase.total_cost.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                <div className="space-y-4">
+                  <h4 className="text-xs font-bold text-stone-400 uppercase tracking-widest">Line Items</h4>
+                  {newPO.items?.map((item, index) => (
+                    <div key={index} className="grid grid-cols-12 gap-3 items-center">
+                      <div className="col-span-4">
+                        <select
+                          className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-sm"
+                          value={item.inventory_item_id || ''}
+                          onChange={(e) => {
+                            const newItems = [...(newPO.items || [])];
+                            newItems[index].inventory_item_id = e.target.value;
+                            setNewPO({...newPO, items: newItems});
+                          }}
+                        >
+                          <option value="">Select Item</option>
+                          {inventory.map(inv => <option key={inv.id} value={inv.id}>{inv.name} ({inv.inventoryNumber})</option>)}
+                        </select>
+                      </div>
+                      <div className="col-span-2">
+                        <input
+                          type="text"
+                          placeholder="Description"
+                          className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-sm"
+                          value={item.description}
+                          onChange={(e) => {
+                            const newItems = [...(newPO.items || [])];
+                            newItems[index].description = e.target.value;
+                            setNewPO({...newPO, items: newItems});
+                          }}
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <input
+                          type="number"
+                          placeholder="Qty"
+                          className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-sm"
+                          value={item.quantity}
+                          onChange={(e) => {
+                            const newItems = [...(newPO.items || [])];
+                            newItems[index].quantity = parseFloat(e.target.value);
+                            setNewPO({...newPO, items: newItems, total_amount: newItems.reduce((acc, i) => acc + (i.quantity * i.unit_price), 0)});
+                          }}
+                        />
+                      </div>
+                      <div className="col-span-3">
+                        <input
+                          type="number"
+                          placeholder="Price"
+                          className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-sm"
+                          value={item.unit_price}
+                          onChange={(e) => {
+                            const newItems = [...(newPO.items || [])];
+                            newItems[index].unit_price = parseFloat(e.target.value);
+                            setNewPO({...newPO, items: newItems, total_amount: newItems.reduce((acc, i) => acc + (i.quantity * i.unit_price), 0)});
+                          }}
+                        />
+                      </div>
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          const newItems = newPO.items?.filter((_, i) => i !== index);
+                          setNewPO({...newPO, items: newItems, total_amount: newItems?.reduce((acc, i) => acc + (i.quantity * i.unit_price), 0)});
+                        }}
+                        className="col-span-1 text-stone-300 hover:text-red-500 transition-colors"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ))}
+                  <button 
+                    type="button"
+                    onClick={() => setNewPO({...newPO, items: [...(newPO.items || []), { description: '', quantity: 1, unit_price: 0 }]})}
+                    className="text-xs font-bold text-stone-900 flex items-center gap-1 hover:underline"
+                  >
+                    <Plus size={14} /> Add Item
+                  </button>
+                </div>
+
+                <div className="pt-6 border-t border-stone-100 flex items-center justify-between">
+                  <div className="text-right">
+                    <p className="text-[10px] text-stone-400 uppercase font-bold">Total Amount</p>
+                    <p className="text-2xl font-bold text-stone-900">${newPO.total_amount?.toLocaleString()}</p>
                   </div>
                   <button
                     type="submit"
-                    className="w-full md:w-auto px-12 py-5 bg-[#2563eb] text-white rounded-[24px] font-black text-lg hover:bg-blue-700 transition-all shadow-xl hover:shadow-[#2563eb]/20 active:scale-95 shadow-blue-500/10"
+                    className="bg-olive-accent text-white px-10 py-4 rounded-2xl font-bold hover:opacity-90 transition-all shadow-lg"
                   >
-                    Save Purchase
+                    Save Purchase Order
                   </button>
                 </div>
               </form>

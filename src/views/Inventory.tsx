@@ -9,7 +9,7 @@ export default function Inventory() {
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterBrand, setFilterBrand] = useState<Brand | 'All'>('Twisted Twig');
+  const [filterBrand, setFilterBrand] = useState<Brand | 'All'>('All');
   
   const [newItem, setNewItem] = useState<Partial<InventoryItem>>({
     owner: 'Twisted Twig',
@@ -23,13 +23,11 @@ export default function Inventory() {
     return subscribeToCollection<InventoryItem>('inventory', setItems);
   }, []);
 
-  const filteredItems = [...items]
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .filter(item => {
-      const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesBrand = filterBrand === 'All' || item.owner === filterBrand;
-      return matchesSearch && matchesBrand;
-    });
+  const filteredItems = items.filter(item => {
+    const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesBrand = filterBrand === 'All' || item.owner === filterBrand;
+    return matchesSearch && matchesBrand;
+  });
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -237,7 +235,6 @@ export default function Inventory() {
                   <input
                     type="number"
                     required
-                    step="0.01"
                     className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-2 focus:outline-none"
                     value={newItem.acquisition_cost || 0}
                     onChange={(e) => setNewItem({...newItem, acquisition_cost: parseFloat(e.target.value)})}
@@ -265,7 +262,7 @@ export default function Inventory() {
                     max="10"
                     className="w-full accent-stone-900"
                     value={newItem.current_condition || 5}
-                    onChange={(e) => setNewItem({...newItem, current_condition: parseInt(e.target.value)})}
+                    onChange={(e) => setNewItem({...newItem, current_condition: parseInt(e.target.value, 10)})}
                   />
                   <div className="flex justify-between text-[10px] text-stone-400 font-bold">
                     <span>POOR</span>

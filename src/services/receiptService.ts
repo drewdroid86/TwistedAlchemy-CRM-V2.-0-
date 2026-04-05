@@ -18,18 +18,14 @@ The shop runs two brands:
 Extract the following details from this receipt image:
 - vendor: Name of the store or vendor.
 - date: Date of purchase in YYYY-MM-DD format.
-- total_amount: Total amount paid.
-- items: List of individual items purchased.
+- total: Total amount paid.
+- line_items: List of individual items purchased.
   - description: Specific item description.
-  - quantity: Number of items (default to 1 if not specified).
-  - unit_price: Price per unit.
-- notes: Any relevant notes or context.
-- brand: Suggested brand for this purchase ("Twisted Twig" or "Wood Grain Alchemist") based on the items.
+  - amount: Price per unit.
 
 Rules:
 - Handle missing values gracefully (e.g., empty string or 0).
 - Ensure exact prices are extracted.
-- Default quantities to 1 if not explicitly stated.
 - Provide specific item descriptions.
 - Output MUST be valid JSON matching the specified schema. Do not include markdown formatting like \`\`\`json.`;
 
@@ -57,23 +53,20 @@ Rules:
           properties: {
             vendor: { type: Type.STRING },
             date: { type: Type.STRING, description: "ISO date format YYYY-MM-DD" },
-            total_amount: { type: Type.NUMBER },
-            items: {
+            total: { type: Type.NUMBER },
+            line_items: {
               type: Type.ARRAY,
               items: {
                 type: Type.OBJECT,
                 properties: {
                   description: { type: Type.STRING },
-                  quantity: { type: Type.NUMBER },
-                  unit_price: { type: Type.NUMBER }
+                  amount: { type: Type.NUMBER }
                 },
-                required: ["description", "quantity", "unit_price"]
+                required: ["description", "amount"]
               }
-            },
-            notes: { type: Type.STRING },
-            brand: { type: Type.STRING, enum: ["Twisted Twig", "Wood Grain Alchemist"] }
+            }
           },
-          required: ["vendor", "date", "total_amount", "items", "brand"]
+          required: ["vendor", "date", "total", "line_items"]
         }
       }
     });

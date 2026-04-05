@@ -108,6 +108,16 @@ export default function App() {
     { id: 'help', label: 'Help & Guide', icon: HelpCircle },
   ];
 
+  const viewLabels: Record<View, string> = {
+    dashboard: 'Dashboard',
+    inventory: 'Inventory',
+    projects: 'Projects',
+    purchasing: 'Purchasing',
+    customers: 'Customers',
+    reports: 'Financials',
+    help: 'Help & Guide'
+  };
+
   return (
     <ErrorBoundary>
       <div className="min-h-screen bg-app-bg flex">
@@ -169,8 +179,8 @@ export default function App() {
         {/* Main Content */}
         <main className="flex-1 overflow-auto">
           <header className="h-16 bg-white border-b border-border flex items-center justify-between px-8 sticky top-0 z-10">
-            <h2 className="text-lg font-semibold text-text-primary capitalize">
-              {activeView}
+            <h2 className="text-lg font-semibold text-text-primary">
+              {viewLabels[activeView]}
             </h2>
             <div className="flex items-center gap-4">
               <div className="text-right hidden sm:block">
