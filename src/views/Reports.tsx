@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { subscribeToCollection } from '../services/firebaseService';
-import { Project, InventoryItem, Customer, Brand } from '../types';
+import { Project, InventoryItem, Customer } from '../types';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   PieChart, Pie, Cell
@@ -12,7 +12,6 @@ import {
   Package, 
   Users, 
   Hammer,
-  ChevronDown,
   Printer
 } from 'lucide-react';
 import { motion } from 'motion/react';
