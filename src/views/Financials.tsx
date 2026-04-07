@@ -17,12 +17,14 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 
+type ReportType = 'pnl' | 'balanceSheet' | 'digitize';
+
 export default function Financials() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
-  const [activeReport, setActiveReport] = useState<'pnl' | 'balanceSheet' | 'digitize'>('pnl');
+  const [activeReport, setActiveReport] = useState<ReportType>('pnl');
 
   const [filterMonth, setFilterMonth] = useState<number>(new Date().getMonth());
   const [filterYear, setFilterYear] = useState<number>(new Date().getFullYear());
@@ -194,14 +196,14 @@ export default function Financials() {
 
       {/* Report Navigation */}
       <div className="flex gap-4 border-b border-slate-200 print:hidden">
-        {[
+        {( [
           { id: 'pnl', label: 'Profit & Loss', icon: TrendingUp },
           { id: 'balanceSheet', label: 'Balance Sheet', icon: Scale },
           { id: 'digitize', label: 'Digitize Records', icon: History },
-        ].map((tab) => (
+        ] as const).map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActiveReport(tab.id as any)}
+            onClick={() => setActiveReport(tab.id)}
             className={`flex items-center gap-2 px-6 py-4 font-bold text-sm transition-all relative ${
               activeReport === tab.id ? 'text-slate-900' : 'text-slate-500 hover:text-slate-700'
             }`}
