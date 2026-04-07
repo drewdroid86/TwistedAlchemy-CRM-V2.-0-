@@ -1,130 +1,46 @@
 {
   "entities": {
-    "inventory_item": {
-      "title": "Inventory Item",
-      "description": "Raw materials, furniture pieces, or supplies used in the shop.",
-      "type": "object",
-      "properties": {
-        "owner": {
-          "type": "string",
-          "enum": ["Twisted Twig", "Wood Grain Alchemist"],
-          "description": "Which business entity owns this item."
-        },
-        "type": {
-          "type": "string",
-          "enum": ["Raw Material", "Furniture Piece", "Supply"],
-          "description": "Category of the item."
-        },
-        "name": {
-          "type": "string",
-          "description": "Name of the item (e.g., Black Oak, Victorian Dresser)."
-        },
-        "quantity": {
-          "type": "number",
-          "description": "Amount in board feet or units."
-        },
-        "acquisition_cost": {
-          "type": "number",
-          "description": "Cost to acquire the item."
-        },
-        "current_condition": {
-          "type": "integer",
-          "description": "Scale 1-10 (primarily for Twisted Twig pieces)."
-        },
-        "location": {
-          "type": "string",
-          "description": "Where the item is stored (e.g., Shop floor, Storage)."
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time"
-        },
-        "updatedAt": {
-          "type": "string",
-          "format": "date-time"
-        }
-      },
-      "required": ["owner", "type", "name", "quantity", "acquisition_cost"]
-    },
-    "project": {
+    "Project": {
       "title": "Project",
-      "description": "A refurbishing or custom build project.",
+      "description": "A woodworking project",
       "type": "object",
       "properties": {
-        "brand": {
-          "type": "string",
-          "enum": ["Twisted Twig", "Wood Grain Alchemist"],
-          "description": "Which brand is leading the project."
-        },
-        "client_id": {
-          "type": "string",
-          "description": "ID of the customer."
-        },
-        "status": {
-          "type": "string",
-          "enum": ["Intake", "Assessment", "Structural Repair", "Finishing", "Complete"],
-          "description": "Current phase of the project."
-        },
-        "assigned_to": {
-          "type": "string",
-          "description": "Who is working on it (e.g., Andrew, Jordan)."
-        },
-        "financials": {
-          "type": "object",
-          "properties": {
-            "item_cost": { "type": "number" },
-            "supplies_cost": { "type": "number" },
-            "labor_hours": { "type": "number" },
-            "hourly_rate": { "type": "number" },
-            "pricing_strategy": { "type": "string" },
-            "target_sale_price": { "type": "number" },
-            "actual_sale_price": { "type": "number" }
-          }
-        },
-        "work_log": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "timestamp": { "type": "string", "format": "date-time" },
-              "action": { "type": "string" },
-              "notes": { "type": "string" }
-            }
-          }
-        },
-        "createdAt": { "type": "string", "format": "date-time" },
-        "updatedAt": { "type": "string", "format": "date-time" }
+        "id": { "type": "string" },
+        "brand": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "status": { "type": "string" },
+        "assigned_to": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" },
+        "completedAt": { "type": "string" }
       },
-      "required": ["brand", "status"]
+      "required": ["brand", "title", "status", "assigned_to", "createdAt", "updatedAt"]
     },
-    "customer": {
-      "title": "Customer",
-      "description": "Customer contact and history.",
+    "PurchaseOrder": {
+      "title": "PurchaseOrder",
+      "description": "A purchase order for supplies",
       "type": "object",
       "properties": {
-        "name": { "type": "string" },
-        "contact": { "type": "string", "description": "Email or phone." },
-        "purchase_history": {
-          "type": "array",
-          "items": { "type": "string" },
-          "description": "List of project IDs."
-        }
+        "id": { "type": "string" },
+        "brand": { "type": "string" },
+        "vendor": { "type": "string" },
+        "date": { "type": "string" },
+        "total_amount": { "type": "number" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string" }
       },
-      "required": ["name", "contact"]
+      "required": ["brand", "vendor", "date", "total_amount", "status", "createdAt"]
     }
   },
   "firestore": {
-    "inventory": {
-      "schema": "inventory_item",
-      "description": "Shop inventory items."
+    "/projects/{projectId}": {
+      "schema": { "$ref": "Project" },
+      "description": "Projects collection"
     },
-    "projects": {
-      "schema": "project",
-      "description": "Active and completed projects."
-    },
-    "customers": {
-      "schema": "customer",
-      "description": "Customer database."
+    "/purchase_orders/{poId}": {
+      "schema": { "$ref": "PurchaseOrder" },
+      "description": "Purchase orders collection"
     }
   }
 }
