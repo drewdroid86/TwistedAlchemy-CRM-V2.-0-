@@ -1,5 +1,59 @@
 {
   "entities": {
+    "User": {
+      "title": "User",
+      "description": "A user account with role-based access control.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The user's unique Firebase Auth UID." },
+        "email": { "type": "string", "description": "The user's email address." },
+        "displayName": { "type": "string", "description": "The user's display name." },
+        "role": { "type": "string", "enum": ["admin", "user"], "description": "The user's role." }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "InventoryItem": {
+      "title": "Inventory Item",
+      "description": "Raw materials, furniture pieces, or supplies.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "inventoryNumber": { "type": "string" },
+        "owner": { "type": "string" },
+        "type": { "type": "string" },
+        "name": { "type": "string" },
+        "quantity": { "type": "number" },
+        "acquisition_cost": { "type": "number" },
+        "location": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["inventoryNumber", "owner", "type", "name", "quantity", "acquisition_cost", "location", "createdAt", "updatedAt"]
+    },
+    "Customer": {
+      "title": "Customer",
+      "description": "A customer record.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "contact": { "type": "string" },
+        "purchase_history": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["name", "contact"]
+    },
+    "ShopNote": {
+      "title": "Shop Note",
+      "description": "A general note for the shop.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "text": { "type": "string" },
+        "author": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["text", "author", "createdAt"]
+    },
     "Project": {
       "title": "Project",
       "description": "A woodworking project",
@@ -18,7 +72,7 @@
       "required": ["brand", "title", "status", "assigned_to", "createdAt", "updatedAt"]
     },
     "PurchaseOrder": {
-      "title": "PurchaseOrder",
+      "title": "Purchase Order",
       "description": "A purchase order for supplies",
       "type": "object",
       "properties": {
@@ -34,13 +88,29 @@
     }
   },
   "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "User" },
+      "description": "Stores user data and roles for RBAC."
+    },
+    "/inventory/{itemId}": {
+      "schema": { "$ref": "InventoryItem" },
+      "description": "Shop inventory items."
+    },
+    "/customers/{customerId}": {
+      "schema": { "$ref": "Customer" },
+      "description": "Customer database."
+    },
+    "/shop_notes/{noteId}": {
+      "schema": { "$ref": "ShopNote" },
+      "description": "General shop notes."
+    },
     "/projects/{projectId}": {
       "schema": { "$ref": "Project" },
-      "description": "Projects collection"
+      "description": "Active and completed projects."
     },
     "/purchase_orders/{poId}": {
       "schema": { "$ref": "PurchaseOrder" },
-      "description": "Purchase orders collection"
+      "description": "Purchase orders for supplies."
     }
   }
 }
