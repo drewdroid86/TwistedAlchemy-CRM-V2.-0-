@@ -19,7 +19,23 @@ import { GoogleGenAI } from "@google/genai";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-const TUTORIAL_SECTIONS = [
+interface TutorialStep {
+  title: string;
+  desc: string;
+  action: string;
+}
+
+interface TutorialSection {
+  id: string;
+  title: string;
+  icon: React.ElementType;
+  content: string;
+  isWalkthrough?: boolean;
+  steps?: TutorialStep[];
+  tips?: string[];
+}
+
+const TUTORIAL_SECTIONS: TutorialSection[] = [
   {
     id: 'walkthrough',
     title: 'Workflow: From Intake to Sale',
@@ -207,9 +223,9 @@ Never say "I don't know" — give your best practical answer and note if you're 
                 </p>
 
                 {/* Walkthrough Steps */}
-                {(selectedSection as any).isWalkthrough ? (
+                {selectedSection.isWalkthrough ? (
                   <div className="space-y-4 mt-8">
-                    {(selectedSection as any).steps.map((step: any, i: number) => (
+                    {selectedSection.steps?.map((step: TutorialStep, i: number) => (
                       <motion.div 
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -238,7 +254,7 @@ Never say "I don't know" — give your best practical answer and note if you're 
                       <Sparkles size={14} /> Pro Tips
                     </h4>
                     <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {selectedSection.tips.map((tip, i) => (
+                      {selectedSection.tips?.map((tip, i) => (
                         <li key={i} className="bg-stone-50 p-4 rounded-2xl text-sm text-stone-700 border border-stone-100 flex gap-3">
                           <div className="w-5 h-5 bg-olive-accent text-white rounded-full flex-none flex items-center justify-center text-[10px] font-bold">
                             {i + 1}
