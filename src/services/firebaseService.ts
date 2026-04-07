@@ -35,7 +35,7 @@ export interface FirestoreErrorInfo {
   error: string;
   operationType: OperationType;
   path: string | null;
-  authInfo: any;
+  authInfo: Record<string, unknown>;
 }
 
 function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
@@ -98,7 +98,13 @@ export const deleteDocument = async (path: string, id: string) => {
   }
 };
 
-export const updateArrayField = async (path: string, id: string, field: string, value: any, action: 'add' | 'remove') => {
+export const updateArrayField = async (
+  path: string,
+  id: string,
+  field: string,
+  value: unknown,
+  action: 'add' | 'remove'
+) => {
   try {
     const docRef = doc(db, path, id);
     await updateDoc(docRef, {

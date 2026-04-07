@@ -4,14 +4,29 @@ service cloud.firestore {
     // ===============================================================
     // Assumed Data Model
     // ===============================================================
-    // Collection: inventory
-    // Fields: owner, type, name, quantity, acquisition_cost, current_condition, location, imageUrl, createdAt, updatedAt
     //
     // Collection: projects
-    // Fields: brand, client_id, status, assigned_to, financials, work_log, images, createdAt, updatedAt
+    // Document ID: {projectId}
+    // Fields:
+    //   - brand: string (required)
+    //   - title: string (required)
+    //   - description: string (required)
+    //   - status: string (required)
+    //   - assigned_to: string (required)
+    //   - createdAt: string (required, immutable)
+    //   - updatedAt: string (required)
+    //   - completedAt: string (optional)
     //
-    // Collection: customers
-    // Fields: name, contact, purchase_history
+    // Collection: purchase_orders
+    // Document ID: {poId}
+    // Fields:
+    //   - brand: string (required)
+    //   - vendor: string (required)
+    //   - date: string (required)
+    //   - total_amount: number (required)
+    //   - status: string (required)
+    //   - createdAt: string (required, immutable)
+    //
     // ===============================================================
 
     // ===============================================================
@@ -21,95 +36,58 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function isEmailVerified() {
-      return request.auth.token.email_verified == true;
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
     }
 
-    function isAdmin() {
-      return isAuthenticated() &&
-        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
-          (request.auth.token.email == "jdrew2517@gmail.com" && isEmailVerified()));
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
     }
 
-    function isValidUrl(url) {
-      return url is string && (url.matches("^https://.*") || url.matches("^http://.*"));
+    function areImmutableFieldsUnchanged(fields) {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(fields);
     }
 
-    function isValidInventory(data) {
-      return data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
-             data.owner in ['Twisted Twig', 'Wood Grain Alchemist'] &&
-             data.quantity is number && data.quantity >= 0 &&
-             data.acquisition_cost is number && data.acquisition_cost >= 0 &&
-             (!('imageUrl' in data) || isValidUrl(data.imageUrl));
-    }
-
-    function isValidProject(data) {
+    function isValidPurchaseOrder(data) {
       return data.brand in ['Twisted Twig', 'Wood Grain Alchemist'] &&
-             data.status in ['Intake', 'Assessment', 'Structural Repair', 'Finishing', 'Complete'] &&
-             data.financials.item_cost is number && data.financials.item_cost >= 0 &&
-             data.financials.supplies_cost is number && data.financials.supplies_cost >= 0 &&
-             data.financials.target_sale_price is number && data.financials.target_sale_price >= 0 &&
-             (!('labor_hours' in data.financials) || (data.financials.labor_hours is number && data.financials.labor_hours >= 0)) &&
-             (!('hourly_rate' in data.financials) || (data.financials.hourly_rate is number && data.financials.hourly_rate >= 0)) &&
-             (!('pricing_strategy' in data.financials) || (data.financials.pricing_strategy in ['Cost Plus', 'Competitive', 'Market Share', 'Value Added', 'Project Based', 'Bundle', 'None'])) &&
-             (!('actual_sale_price' in data.financials) || (data.financials.actual_sale_price is number && data.financials.actual_sale_price >= 0)) &&
-             (!('images' in data) || (data.images is list && data.images.size() <= 10));
-    }
-
-    function isValidCustomer(data) {
-      return data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
-             data.contact is string && data.contact.size() > 0 && data.contact.size() < 200;
+             data.vendor is string && data.vendor.size() > 0 && data.vendor.size() < 100 &&
+             data.status in ['Draft', 'Ordered', 'Received', 'Cancelled'] &&
+             data.total_amount is number && data.total_amount >= 0 &&
+             data.items is list &&
+             (!('receipt_url' in data) || isValidUrl(data.receipt_url));
     }
 
     // ===============================================================
     // Rules
     // ===============================================================
 
-    // Users collection for RBAC
-    match /users/{userId} {
-      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
-      allow create: if isAuthenticated() && request.auth.uid == userId && request.resource.data.role == 'user';
-      allow update: if isAdmin();
-    }
-
-    // Inventory
-    match /inventory/{itemId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && isValidInventory(request.resource.data);
-      allow update: if isAuthenticated() && isValidInventory(request.resource.data);
-      allow delete: if isAdmin();
-    }
-
-    // Projects
     match /projects/{projectId} {
-      allow read: if isAuthenticated() && (isAdmin() || request.auth.uid == resource.data.ownerId || !('ownerId' in resource.data));
-      allow create: if isAuthenticated() && isValidProject(request.resource.data);
-      allow update: if isAuthenticated() && (isAdmin() || request.auth.uid == resource.data.ownerId || !('ownerId' in resource.data)) && isValidProject(request.resource.data);
-      allow delete: if isAdmin();
-    }
-
-    // Customers
-    match /customers/{customerId} {
-      allow read: if isAuthenticated() && (isAdmin() || request.auth.uid == resource.data.ownerId || !('ownerId' in resource.data));
-      allow create: if isAuthenticated() && isValidCustomer(request.resource.data);
-      allow update: if isAuthenticated() && (isAdmin() || request.auth.uid == resource.data.ownerId || !('ownerId' in resource.data)) && isValidCustomer(request.resource.data);
-      allow delete: if isAdmin();
-    }
-
-    // Shop Notes
-    match /shop_notes/{noteId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && request.resource.data.text is string && request.resource.data.text.size() > 0 && request.resource.data.text.size() < 1000;
-      allow update: if isAuthenticated() && request.resource.data.text is string && request.resource.data.text.size() > 0 && request.resource.data.text.size() < 1000;
+      allow create: if isAuthenticated() && hasRequiredFields(['brand', 'title', 'description', 'status', 'assigned_to', 'createdAt', 'updatedAt']);
+      allow update: if isAuthenticated() && areImmutableFieldsUnchanged(['createdAt']);
       allow delete: if isAuthenticated();
     }
 
-    // Purchase Orders
     match /purchase_orders/{poId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated();
-      allow delete: if isAdmin();
+      allow create: if isAuthenticated() && hasRequiredFields(['brand', 'vendor', 'date', 'total_amount', 'status', 'createdAt']);
+      allow update: if isAuthenticated() && areImmutableFieldsUnchanged(['createdAt']);
+      allow delete: if isAuthenticated();
+    }
+
+    match /shop_notes/{noteId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+
+    match /inventory/{itemId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+
+    match /customers/{customerId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
     }
   }
 }
