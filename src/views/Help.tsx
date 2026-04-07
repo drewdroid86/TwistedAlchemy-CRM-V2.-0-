@@ -12,24 +12,27 @@ import {
   MessageSquare,
   Sparkles,
   Send,
-  Loader2
+  Loader2,
+  LucideIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { GoogleGenAI } from "@google/genai";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
+interface TutorialStep {
+  title: string;
+  desc: string;
+  action: string;
+}
+
 interface TutorialSection {
   id: string;
   title: string;
-  icon: React.ElementType;
+  icon: LucideIcon;
   content: string;
   isWalkthrough?: boolean;
-  steps?: {
-    title: string;
-    desc: string;
-    action: string;
-  }[];
+  steps?: TutorialStep[];
   tips?: string[];
 }
 
@@ -108,7 +111,7 @@ const TUTORIAL_SECTIONS: TutorialSection[] = [
 ];
 
 export default function Help() {
-  const [selectedSection, setSelectedSection] = useState(TUTORIAL_SECTIONS[0]);
+  const [selectedSection, setSelectedSection] = useState<TutorialSection>(TUTORIAL_SECTIONS[0]);
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
   const [isAsking, setIsAsking] = useState(false);
@@ -221,9 +224,9 @@ Never say "I don't know" — give your best practical answer and note if you're 
                 </p>
 
                 {/* Walkthrough Steps */}
-                {selectedSection.isWalkthrough && selectedSection.steps ? (
+                {selectedSection.isWalkthrough ? (
                   <div className="space-y-4 mt-8">
-                    {selectedSection.steps.map((step, i) => (
+                    {selectedSection.steps?.map((step, i) => (
                       <motion.div 
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}

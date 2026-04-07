@@ -52,24 +52,17 @@ The UI is built using the **Warm Organic** design recipe, featuring:
 Create a `.env` file with the following:
 ```env
 GEMINI_API_KEY=your_gemini_api_key
-
-# Firebase Configuration
-VITE_FIREBASE_PROJECT_ID=your_project_id
-VITE_FIREBASE_APP_ID=your_app_id
-VITE_FIREBASE_API_KEY=your_api_key
-VITE_FIREBASE_AUTH_DOMAIN=your_auth_domain
-VITE_FIREBASE_FIRESTORE_DATABASE_ID=your_firestore_database_id
-VITE_FIREBASE_STORAGE_BUCKET=your_storage_bucket
-VITE_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
-VITE_FIREBASE_MEASUREMENT_ID=your_measurement_id
 ```
 
-### 2. Enable Firebase Services
+### 2. Firebase Configuration
+Ensure `firebase-applet-config.json` is populated with your Firebase project credentials.
+
+### 3. Enable Firebase Services
 - **Authentication:** Enable Google Sign-In.
 - **Firestore:** Create a database and deploy the provided `firestore.rules`.
 - **Storage:** Enable Firebase Storage to support photo uploads.
 
-### 3. Installation
+### 4. Installation
 ```bash
 npm install
 npm run dev
