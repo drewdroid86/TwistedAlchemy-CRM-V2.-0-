@@ -200,7 +200,7 @@ export default function Inventory() {
                   <select 
                     className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-2 focus:outline-none"
                     value={newItem.type}
-                    onChange={(e) => setNewItem({...newItem, type: e.target.value as any})}
+                    onChange={(e) => setNewItem({...newItem, type: e.target.value as InventoryItem['type']})}
                   >
                     <option value="Furniture Piece">Furniture Piece</option>
                     <option value="Raw Material">Raw Material</option>
