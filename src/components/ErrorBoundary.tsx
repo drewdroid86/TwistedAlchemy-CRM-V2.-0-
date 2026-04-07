@@ -29,11 +29,18 @@ export class ErrorBoundary extends Component<Props, State> {
   public render() {
     if (this.state.hasError) {
       let errorMessage = 'An unexpected error occurred.';
-      try {
-        const parsed = JSON.parse(this.state.error?.message || '');
-        if (parsed.error) errorMessage = parsed.error;
-      } catch (e) {
-        errorMessage = this.state.error?.message || errorMessage;
+
+      const error = this.state.error;
+      if (error && 'info' in error && error.info && typeof error.info === 'object' && 'error' in error.info) {
+        // Handle custom FirestoreError with info property
+        errorMessage = (error.info as any).error;
+      } else {
+        try {
+          const parsed = JSON.parse(error?.message || '');
+          if (parsed.error) errorMessage = parsed.error;
+        } catch (e) {
+          errorMessage = error?.message || errorMessage;
+        }
       }
 
       return (

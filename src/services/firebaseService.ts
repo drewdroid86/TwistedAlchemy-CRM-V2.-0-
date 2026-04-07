@@ -38,6 +38,18 @@ export interface FirestoreErrorInfo {
   authInfo: any;
 }
 
+export class FirestoreError extends Error {
+  info: FirestoreErrorInfo;
+
+  constructor(info: FirestoreErrorInfo) {
+    super(`Firestore ${info.operationType} error`);
+    this.name = 'FirestoreError';
+    this.info = info;
+    // Set the prototype explicitly to ensure instanceof works
+    Object.setPrototypeOf(this, FirestoreError.prototype);
+  }
+}
+
 function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
   const errInfo: FirestoreErrorInfo = {
     error: error instanceof Error ? error.message : String(error),
