@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { subscribeToCollection } from '../services/firebaseService';
-import { Project, InventoryItem, Customer, Brand } from '../types';
-import { getSalesData, getFinancialSummary, getInventoryData, getProjectStatusData, getCustomerData } from '../utils/reportUtils';
+import { Project, InventoryItem, Customer } from '../types';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  PieChart, Pie, Cell, LineChart, Line
+  PieChart, Pie, Cell
 } from 'recharts';
 import { 
   FileText, 
@@ -13,7 +12,6 @@ import {
   Package, 
   Users, 
   Hammer,
-  ChevronDown,
   Printer
 } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -40,19 +38,53 @@ export default function Reports() {
   // --- Data Processing for Reports ---
 
   // 1. Sales Report Data
-  const salesData = getSalesData(projects);
+  const completedProjects = projects.filter(p => p.status === 'Complete');
+  const salesByMonth = completedProjects.reduce((acc: any, p) => {
+    const month = new Date(p.createdAt).toLocaleString('default', { month: 'short' });
+    if (!acc[month]) acc[month] = { month, revenue: 0, profit: 0 };
+    const rev = p.financials.actual_sale_price || 0;
+    const cost = (p.financials.item_cost || 0) + (p.financials.supplies_cost || 0);
+    acc[month].revenue += rev;
+    acc[month].profit += (rev - cost);
+    return acc;
+  }, {});
+  const salesData = Object.values(salesByMonth);
 
   // Loan Officer Summary Data
-  const { totalRevenue, totalCost, totalProfit, inventoryValue, activeProjectCount, completedProjects } = getFinancialSummary(projects, inventory);
+  const totalRevenue = completedProjects.reduce((acc, p) => acc + (p.financials.actual_sale_price || 0), 0);
+  const totalCost = completedProjects.reduce((acc, p) => acc + (p.financials.item_cost || 0) + (p.financials.supplies_cost || 0), 0);
+  const totalProfit = totalRevenue - totalCost;
+  const inventoryValue = inventory.reduce((acc, item) => acc + (item.acquisition_cost * item.quantity), 0);
+  const activeProjectCount = projects.filter(p => p.status !== 'Complete').length;
 
   // 2. Inventory Report Data
-  const inventoryData = getInventoryData(inventory);
+  const inventoryByBrand = inventory.reduce((acc: any, item) => {
+    if (!acc[item.owner]) acc[item.owner] = { name: item.owner, value: 0, count: 0 };
+    acc[item.owner].value += (item.acquisition_cost * item.quantity);
+    acc[item.owner].count += item.quantity;
+    return acc;
+  }, {});
+  const inventoryData = Object.values(inventoryByBrand);
 
   // 3. Project Status Data
-  const projectStatusData = getProjectStatusData(projects);
+  const statusCounts = projects.reduce((acc: any, p) => {
+    acc[p.status] = (acc[p.status] || 0) + 1;
+    return acc;
+  }, {});
+  const projectStatusData = Object.entries(statusCounts).map(([name, value]) => ({ name, value }));
 
   // 4. Customer Spend Data
-  const customerData = getCustomerData(projects, customers);
+  const customerSpend = projects.reduce((acc: any, p) => {
+    if (!p.client_id) return acc;
+    const customer = customers.find(c => c.id === p.client_id);
+    const name = customer?.name || 'Unknown';
+    acc[name] = (acc[name] || 0) + (p.financials.actual_sale_price || 0);
+    return acc;
+  }, {});
+  const customerData = Object.entries(customerSpend)
+    .map(([name, spend]) => ({ name, spend: spend as number }))
+    .sort((a, b) => b.spend - a.spend)
+    .slice(0, 5);
 
   const handlePrint = () => {
     window.print();
