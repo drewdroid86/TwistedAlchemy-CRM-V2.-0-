@@ -95,5 +95,8 @@ describe('App', () => {
 
     // Verify error was logged correctly
     expect(consoleErrorSpy).toHaveBeenCalledWith('Login failed', testError);
+
+    // Verify error message is displayed to the user
+    expect(screen.getByText('Authentication failed. Please try again.')).toBeInTheDocument();
   });
 });
