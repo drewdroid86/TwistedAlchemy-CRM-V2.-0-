@@ -81,7 +81,7 @@ export default function Purchasing() {
           vendor: extractedData.vendor || '',
           date: extractedData.date || new Date().toISOString().split('T')[0],
           total_amount: extractedData.total || 0,
-          items: (extractedData.line_items || []).map((item: any) => ({
+          items: (extractedData.line_items || []).map((item: { description?: string; amount?: number }) => ({
             description: item.description || '',
             quantity: 1,
             unit_price: item.amount || 0

@@ -255,7 +255,7 @@ Never say "I don't know" — give your best practical answer and note if you're 
                       <Sparkles size={14} /> Pro Tips
                     </h4>
                     <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {selectedSection.tips.map((tip, i) => (
+                      {selectedSection.tips?.map((tip, i) => (
                         <li key={i} className="bg-stone-50 p-4 rounded-2xl text-sm text-stone-700 border border-stone-100 flex gap-3">
                           <div className="w-5 h-5 bg-olive-accent text-white rounded-full flex-none flex items-center justify-center text-[10px] font-bold">
                             {i + 1}
