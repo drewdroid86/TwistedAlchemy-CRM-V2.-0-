@@ -254,7 +254,7 @@ export default function Purchasing() {
                     <select 
                       className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 focus:outline-none"
                       value={newPO.status}
-                      onChange={(e) => setNewPO({...newPO, status: e.target.value as any})}
+                      onChange={(e) => setNewPO({...newPO, status: e.target.value as PurchaseOrder['status']})}
                     >
                       <option value="Draft">Draft</option>
                       <option value="Ordered">Ordered</option>
