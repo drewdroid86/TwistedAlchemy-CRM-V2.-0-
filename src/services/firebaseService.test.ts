@@ -1,76 +1,88 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { deleteDocument, OperationType } from './firebaseService';
-import { deleteDoc, doc } from 'firebase/firestore';
+import {
+  getDocs,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  collection,
+  doc,
+} from 'firebase/firestore';
+import {
+  getCollection,
+  createDocument,
+  updateDocument,
+  deleteDocument,
+} from '../services/firebaseService';
+import { db } from '../firebase'; // This will be the mock from setup
 
-// Mock the firebase/firestore module
-vi.mock('firebase/firestore', () => {
-  return {
-    collection: vi.fn(),
-    addDoc: vi.fn(),
-    updateDoc: vi.fn(),
-    deleteDoc: vi.fn(),
-    doc: vi.fn(),
-    onSnapshot: vi.fn(),
-    query: vi.fn(),
-    where: vi.fn(),
-    getDocs: vi.fn(),
-    arrayUnion: vi.fn(),
-    arrayRemove: vi.fn(),
-  };
-});
+// Typecasting the mocked functions to satisfy TypeScript
+const getDocsMock = getDocs as vi.Mock;
+const addDocMock = addDoc as vi.Mock;
+const updateDocMock = updateDoc as vi.Mock;
+const deleteDocMock = deleteDoc as vi.Mock;
+const collectionMock = collection as vi.Mock;
+const docMock = doc as vi.Mock;
 
-// Mock the firebase module
-vi.mock('../firebase', () => {
-  return {
-    db: {},
-  };
-});
-
-describe('firebaseService - deleteDocument', () => {
+describe('Firebase Service', () => {
   beforeEach(() => {
+    // Clear mock history before each test
     vi.clearAllMocks();
+    collectionMock.mockReturnValue({ id: 'mock-collection' });
+    docMock.mockReturnValue({ id: 'mock-doc' });
   });
 
-  it('should successfully delete a document', async () => {
-    // Setup
-    const path = 'testCollection';
-    const id = 'testId';
-    const mockDocRef = { id: 'testId' };
+  // Test for fetching a collection (Read)
+  describe('getCollection', () => {
+    it('should fetch and return documents from a collection', async () => {
+      const mockData = [{ id: '1', name: 'Test Item' }];
+      getDocsMock.mockResolvedValue({
+        docs: mockData.map((item) => ({ id: item.id, data: () => ({ name: item.name }) })),
+      });
 
-    // Use `as unknown as any` to bypass typescript error with mock
-    vi.mocked(doc).mockReturnValue(mockDocRef as any);
-    vi.mocked(deleteDoc).mockResolvedValue(undefined);
+      const result = await getCollection('inventory');
 
-    // Execute
-    await deleteDocument(path, id);
-
-    // Assert
-    expect(doc).toHaveBeenCalledWith(expect.anything(), path, id);
-    expect(deleteDoc).toHaveBeenCalledWith(mockDocRef);
+      expect(collection).toHaveBeenCalledWith(db, 'inventory');
+      expect(getDocs).toHaveBeenCalled();
+      expect(result).toEqual(mockData);
+    });
   });
 
-  it('should handle and rethrow errors from deleteDoc', async () => {
-    // Setup
-    const path = 'testCollection';
-    const id = 'testId';
-    const errorMessage = 'Permission denied';
-    const expectedErrorPayload = {
-      error: errorMessage,
-      authInfo: {}, // Mock auth info
-      operationType: OperationType.DELETE,
-      path: `${path}/${id}`,
-    };
+  // Test for creating a document (Create)
+  describe('createDocument', () => {
+    it('should add a new document to a collection', async () => {
+      const newData = { name: 'New Item' };
+      addDocMock.mockResolvedValue({ id: '2' });
 
-    vi.mocked(doc).mockReturnValue({} as any);
-    vi.mocked(deleteDoc).mockRejectedValue(new Error(errorMessage));
+      const result = await createDocument('inventory', newData);
 
-    // Execute & Assert
-    try {
-      await deleteDocument(path, id);
-      expect.fail('Should have thrown an error');
-    } catch (e: any) {
-      expect(e.message).toBe('Firestore delete error');
-      expect(e.info).toEqual(expectedErrorPayload);
-    }
+      expect(collection).toHaveBeenCalledWith(db, 'inventory');
+      expect(addDoc).toHaveBeenCalledWith({ id: 'mock-collection' }, newData);
+      expect(result).toEqual({ id: '2' });
+    });
+  });
+
+  // Test for updating a document (Update)
+  describe('updateDocument', () => {
+    it('should update an existing document in a collection', async () => {
+      const updates = { name: 'Updated Item' };
+      updateDocMock.mockResolvedValue(undefined); // updateDoc returns void on success
+
+      await updateDocument('customers', '123', updates);
+
+      expect(doc).toHaveBeenCalledWith(db, 'customers', '123');
+      expect(updateDoc).toHaveBeenCalledWith({ id: 'mock-doc' }, updates);
+    });
+  });
+
+  // Test for deleting a document (Delete)
+  describe('deleteDocument', () => {
+    it('should delete a document from a collection', async () => {
+      deleteDocMock.mockResolvedValue(undefined); // deleteDoc returns void on success
+
+      await deleteDocument('shop_notes', 'abc');
+
+      expect(doc).toHaveBeenCalledWith(db, 'shop_notes', 'abc');
+      expect(deleteDoc).toHaveBeenCalledWith({ id: 'mock-doc' });
+    });
   });
 });

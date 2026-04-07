@@ -59,8 +59,8 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
     operationType,
     path
   };
-  console.error(`Firestore Error during ${operationType} operation. Check application logs for details.`);
-  throw new FirestoreError(errInfo);
+  console.error(`Firestore Error [${operationType}]: An error occurred while accessing the database.`);
+  throw new Error(JSON.stringify(errInfo));
 }
 
 export const subscribeToCollection = <T extends DocumentData>(
