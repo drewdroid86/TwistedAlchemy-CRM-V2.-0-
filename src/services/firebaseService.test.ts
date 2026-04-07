@@ -65,8 +65,12 @@ describe('firebaseService - deleteDocument', () => {
     vi.mocked(deleteDoc).mockRejectedValue(new Error(errorMessage));
 
     // Execute & Assert
-    await expect(deleteDocument(path, id)).rejects.toThrowError(
-      JSON.stringify(expectedErrorPayload)
-    );
+    try {
+      await deleteDocument(path, id);
+      expect.fail('Should have thrown an error');
+    } catch (e: any) {
+      expect(e.message).toBe('Firestore delete error');
+      expect(e.info).toEqual(expectedErrorPayload);
+    }
   });
 });

@@ -38,6 +38,18 @@ export interface FirestoreErrorInfo {
   authInfo: any;
 }
 
+export class FirestoreError extends Error {
+  info: FirestoreErrorInfo;
+
+  constructor(info: FirestoreErrorInfo) {
+    super(`Firestore ${info.operationType} error`);
+    this.name = 'FirestoreError';
+    this.info = info;
+    // Set the prototype explicitly to ensure instanceof works
+    Object.setPrototypeOf(this, FirestoreError.prototype);
+  }
+}
+
 function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
   const errInfo: FirestoreErrorInfo = {
     error: error instanceof Error ? error.message : String(error),
@@ -47,8 +59,8 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
     operationType,
     path
   };
-  console.error('Firestore Error: ', JSON.stringify(errInfo));
-  throw new Error(JSON.stringify(errInfo));
+  console.error(`Firestore Error during ${operationType} operation. Check application logs for details.`);
+  throw new FirestoreError(errInfo);
 }
 
 export const subscribeToCollection = <T extends DocumentData>(
