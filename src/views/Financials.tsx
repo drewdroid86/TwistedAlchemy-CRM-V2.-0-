@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 
+type ReportType = 'pnl' | 'balanceSheet' | 'digitize';
 type ReportTab = 'pnl' | 'balanceSheet' | 'digitize';
 
 const TAB_CONFIG: Record<ReportTab, { label: string; icon: React.ElementType }> = {
@@ -202,32 +203,28 @@ export default function Financials() {
 
       {/* Report Navigation */}
       <div className="flex gap-4 border-b border-slate-200 print:hidden">
-        {(['pnl', 'balanceSheet', 'digitize'] as const).map((id) => {
-          const tabConfig = {
-            pnl: { label: 'Profit & Loss', icon: TrendingUp },
-            balanceSheet: { label: 'Balance Sheet', icon: Scale },
-            digitize: { label: 'Digitize Records', icon: History },
-          }[id];
-
-          return (
-            <button
-              key={id}
-              onClick={() => setActiveReport(id)}
-              className={`flex items-center gap-2 px-6 py-4 font-bold text-sm transition-all relative ${
-                activeReport === id ? 'text-slate-900' : 'text-slate-500 hover:text-slate-700'
-              }`}
-            >
-              <tabConfig.icon size={18} />
-              {tabConfig.label}
-              {activeReport === id && (
-                <motion.div
-                  layoutId="activeTab"
-                  className="absolute bottom-0 left-0 w-full h-1 bg-accent rounded-t-full"
-                />
-              )}
-            </button>
-          );
-        })}
+        {( [
+          { id: 'pnl', label: 'Profit & Loss', icon: TrendingUp },
+          { id: 'balanceSheet', label: 'Balance Sheet', icon: Scale },
+          { id: 'digitize', label: 'Digitize Records', icon: History },
+        ] as const).map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveReport(tab.id)}
+            className={`flex items-center gap-2 px-6 py-4 font-bold text-sm transition-all relative ${
+              activeReport === tab.id ? 'text-slate-900' : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            <tab.icon size={18} />
+            {tab.label}
+            {activeReport === tab.id && (
+              <motion.div 
+                layoutId="activeTab"
+                className="absolute bottom-0 left-0 w-full h-1 bg-accent rounded-t-full"
+              />
+            )}
+          </button>
+        ))}
       </div>
 
       {/* Report Content */}
