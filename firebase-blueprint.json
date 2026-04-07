@@ -1,130 +1,116 @@
 {
   "entities": {
-    "inventory_item": {
+    "User": {
+      "title": "User",
+      "description": "A user account with role-based access control.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The user's unique Firebase Auth UID." },
+        "email": { "type": "string", "description": "The user's email address." },
+        "displayName": { "type": "string", "description": "The user's display name." },
+        "role": { "type": "string", "enum": ["admin", "user"], "description": "The user's role." }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "InventoryItem": {
       "title": "Inventory Item",
-      "description": "Raw materials, furniture pieces, or supplies used in the shop.",
+      "description": "Raw materials, furniture pieces, or supplies.",
       "type": "object",
       "properties": {
-        "owner": {
-          "type": "string",
-          "enum": ["Twisted Twig", "Wood Grain Alchemist"],
-          "description": "Which business entity owns this item."
-        },
-        "type": {
-          "type": "string",
-          "enum": ["Raw Material", "Furniture Piece", "Supply"],
-          "description": "Category of the item."
-        },
-        "name": {
-          "type": "string",
-          "description": "Name of the item (e.g., Black Oak, Victorian Dresser)."
-        },
-        "quantity": {
-          "type": "number",
-          "description": "Amount in board feet or units."
-        },
-        "acquisition_cost": {
-          "type": "number",
-          "description": "Cost to acquire the item."
-        },
-        "current_condition": {
-          "type": "integer",
-          "description": "Scale 1-10 (primarily for Twisted Twig pieces)."
-        },
-        "location": {
-          "type": "string",
-          "description": "Where the item is stored (e.g., Shop floor, Storage)."
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time"
-        },
-        "updatedAt": {
-          "type": "string",
-          "format": "date-time"
-        }
-      },
-      "required": ["owner", "type", "name", "quantity", "acquisition_cost"]
-    },
-    "project": {
-      "title": "Project",
-      "description": "A refurbishing or custom build project.",
-      "type": "object",
-      "properties": {
-        "brand": {
-          "type": "string",
-          "enum": ["Twisted Twig", "Wood Grain Alchemist"],
-          "description": "Which brand is leading the project."
-        },
-        "client_id": {
-          "type": "string",
-          "description": "ID of the customer."
-        },
-        "status": {
-          "type": "string",
-          "enum": ["Intake", "Assessment", "Structural Repair", "Finishing", "Complete"],
-          "description": "Current phase of the project."
-        },
-        "assigned_to": {
-          "type": "string",
-          "description": "Who is working on it (e.g., Andrew, Jordan)."
-        },
-        "financials": {
-          "type": "object",
-          "properties": {
-            "item_cost": { "type": "number" },
-            "supplies_cost": { "type": "number" },
-            "labor_hours": { "type": "number" },
-            "hourly_rate": { "type": "number" },
-            "pricing_strategy": { "type": "string" },
-            "target_sale_price": { "type": "number" },
-            "actual_sale_price": { "type": "number" }
-          }
-        },
-        "work_log": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "timestamp": { "type": "string", "format": "date-time" },
-              "action": { "type": "string" },
-              "notes": { "type": "string" }
-            }
-          }
-        },
-        "createdAt": { "type": "string", "format": "date-time" },
-        "updatedAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["brand", "status"]
-    },
-    "customer": {
-      "title": "Customer",
-      "description": "Customer contact and history.",
-      "type": "object",
-      "properties": {
+        "id": { "type": "string" },
+        "inventoryNumber": { "type": "string" },
+        "owner": { "type": "string" },
+        "type": { "type": "string" },
         "name": { "type": "string" },
-        "contact": { "type": "string", "description": "Email or phone." },
-        "purchase_history": {
-          "type": "array",
-          "items": { "type": "string" },
-          "description": "List of project IDs."
-        }
+        "quantity": { "type": "number" },
+        "acquisition_cost": { "type": "number" },
+        "location": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["inventoryNumber", "owner", "type", "name", "quantity", "acquisition_cost", "location", "createdAt", "updatedAt"]
+    },
+    "Customer": {
+      "title": "Customer",
+      "description": "A customer record.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "contact": { "type": "string" },
+        "purchase_history": { "type": "array", "items": { "type": "string" } }
       },
       "required": ["name", "contact"]
+    },
+    "ShopNote": {
+      "title": "Shop Note",
+      "description": "A general note for the shop.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "text": { "type": "string" },
+        "author": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["text", "author", "createdAt"]
+    },
+    "Project": {
+      "title": "Project",
+      "description": "A woodworking project",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "brand": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "status": { "type": "string" },
+        "assigned_to": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" },
+        "completedAt": { "type": "string" }
+      },
+      "required": ["brand", "title", "status", "assigned_to", "createdAt", "updatedAt"]
+    },
+    "PurchaseOrder": {
+      "title": "Purchase Order",
+      "description": "A purchase order for supplies",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "brand": { "type": "string" },
+        "vendor": { "type": "string" },
+        "date": { "type": "string" },
+        "total_amount": { "type": "number" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["brand", "vendor", "date", "total_amount", "status", "createdAt"]
     }
   },
   "firestore": {
-    "inventory": {
-      "schema": "inventory_item",
+    "/users/{userId}": {
+      "schema": { "$ref": "User" },
+      "description": "Stores user data and roles for RBAC."
+    },
+    "/inventory/{itemId}": {
+      "schema": { "$ref": "InventoryItem" },
       "description": "Shop inventory items."
     },
-    "projects": {
-      "schema": "project",
+    "/customers/{customerId}": {
+      "schema": { "$ref": "Customer" },
+      "description": "Customer database."
+    },
+    "/shop_notes/{noteId}": {
+      "schema": { "$ref": "ShopNote" },
+      "description": "General shop notes."
+    },
+    "/projects/{projectId}": {
+      "schema": { "$ref": "Project" },
       "description": "Active and completed projects."
     },
-    "customers": {
-      "schema": "customer",
-      "description": "Customer database."
+    "/purchase_orders/{poId}": {
+      "schema": { "$ref": "PurchaseOrder" },
+      "description": "Purchase orders for supplies."
     }
   }
 }
