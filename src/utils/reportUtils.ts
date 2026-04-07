@@ -51,13 +51,20 @@ export function getProjectStatusData(projects: Project[]) {
 }
 
 export function getCustomerData(projects: Project[], customers: Customer[]) {
+  const customerMap = new Map();
+  for (const customer of customers) {
+    if (customer.id) {
+      customerMap.set(customer.id, customer.name);
+    }
+  }
+
   const customerSpend = projects.reduce((acc: any, p) => {
     if (!p.client_id) return acc;
-    const customer = customers.find(c => c.id === p.client_id);
-    const name = customer?.name || 'Unknown';
+    const name = customerMap.get(p.client_id) || 'Unknown';
     acc[name] = (acc[name] || 0) + (p.financials?.actual_sale_price || 0);
     return acc;
   }, {});
+
   return Object.entries(customerSpend)
     .map(([name, spend]) => ({ name, spend: spend as number }))
     .sort((a, b) => b.spend - a.spend)
