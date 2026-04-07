@@ -262,7 +262,7 @@ export default function Inventory() {
                     max="10"
                     className="w-full accent-stone-900"
                     value={newItem.current_condition || 5}
-                    onChange={(e) => setNewItem({...newItem, current_condition: parseInt(e.target.value, 10)})}
+                    onChange={(e) => setNewItem({...newItem, current_condition: parseInt(e.target.value)})}
                   />
                   <div className="flex justify-between text-[10px] text-stone-400 font-bold">
                     <span>POOR</span>
