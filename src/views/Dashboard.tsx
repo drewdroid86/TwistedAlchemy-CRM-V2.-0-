@@ -4,7 +4,11 @@ import {
   getInventoryValueByOwner, 
   getProjectCountByStatusAndBrand, 
   getRevenueThisMonthVsLastMonth, 
-  getTop5Customers 
+  getTop5Customers,
+  InventoryValueByOwner,
+  ProjectCountByStatusAndBrand,
+  RevenueComparison,
+  TopCustomer
 } from '../services/analyticsService';
 import { Project, InventoryItem, ShopNote } from '../types';
 import { 
@@ -32,10 +36,10 @@ export default function Dashboard() {
   const [newNote, setNewNote] = useState('');
   
   // Analytics State
-  const [inventoryValue, setInventoryValue] = useState<any[]>([]);
-  const [projectCounts, setProjectCounts] = useState<any[]>([]);
-  const [revenueComparison, setRevenueComparison] = useState<any[]>([]);
-  const [topCustomers, setTopCustomers] = useState<any[]>([]);
+  const [inventoryValue, setInventoryValue] = useState<InventoryValueByOwner[]>([]);
+  const [projectCounts, setProjectCounts] = useState<ProjectCountByStatusAndBrand[]>([]);
+  const [revenueComparison, setRevenueComparison] = useState<RevenueComparison[]>([]);
+  const [topCustomers, setTopCustomers] = useState<TopCustomer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
