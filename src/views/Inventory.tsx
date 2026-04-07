@@ -32,9 +32,11 @@ export default function Inventory() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     const inventoryNumber = `INV-${Math.floor(100000 + Math.random() * 900000)}`;
+    const total_value = (newItem.acquisition_cost || 0) * (newItem.quantity || 0);
     await createDocument('inventory', { 
       ...newItem, 
       inventoryNumber, 
+      total_value,
       createdAt: new Date().toISOString(), 
       updatedAt: new Date().toISOString() 
     });
