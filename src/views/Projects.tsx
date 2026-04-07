@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { subscribeToCollection, createDocument, updateDocument, updateArrayField } from '../services/firebaseService';
 import { Project, Brand, Customer, PricingStrategy, InventoryItem } from '../types';
 import { Plus, Search, Filter, Hammer, Clock, CheckCircle2, AlertCircle, DollarSign, ChevronRight, X, Calculator, Camera, Image as ImageIcon, Sparkles, Loader2 } from 'lucide-react';
@@ -18,20 +18,8 @@ const PRICING_STRATEGIES: { id: PricingStrategy; desc: string }[] = [
   { id: 'None', desc: 'No specific strategy selected' }
 ];
 
-const KANBAN_STATUSES: Project['status'][] = ['Intake', 'Assessment', 'Structural Repair', 'Finishing', 'Complete'];
-
 export default function Projects() {
   const [projects, setProjects] = useState<Project[]>([]);
-  const projectsByStatus = useMemo(() => {
-    return projects.reduce((acc, project) => {
-      const status = project.status;
-      if (!acc[status]) {
-        acc[status] = [];
-      }
-      acc[status].push(project);
-      return acc;
-    }, {} as Record<Project['status'], Project[]>);
-  }, [projects]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -191,8 +179,8 @@ export default function Projects() {
 
       {/* Project Kanban Board */}
       <div className="flex gap-6 overflow-x-auto pb-4 snap-x">
-        {KANBAN_STATUSES.map((status) => {
-          const columnProjects = projectsByStatus[status] || [];
+        {['Intake', 'Assessment', 'Structural Repair', 'Finishing', 'Complete'].map((status) => {
+          const columnProjects = projects.filter(p => p.status === status);
           return (
             <div key={status} className="flex-none w-80 snap-start flex flex-col h-[calc(100vh-200px)]">
               <div className="flex items-center justify-between mb-4">
@@ -252,7 +240,8 @@ export default function Projects() {
                           <button 
                             onClick={(e) => {
                               e.stopPropagation();
-                              const nextStatus = KANBAN_STATUSES[KANBAN_STATUSES.indexOf(status) + 1];
+                              const statuses = ['Intake', 'Assessment', 'Structural Repair', 'Finishing', 'Complete'];
+                              const nextStatus = statuses[statuses.indexOf(status) + 1] as Project['status'];
                               updateStatus(project.id!, nextStatus);
                             }}
                             className="text-stone-400 hover:text-stone-900 p-1 rounded-lg hover:bg-stone-100 transition-colors opacity-0 group-hover:opacity-100"
@@ -308,10 +297,10 @@ export default function Projects() {
                 {/* Status Stepper */}
                 <div className="flex justify-between relative">
                   <div className="absolute top-1/2 left-0 w-full h-0.5 bg-stone-100 -translate-y-1/2 -z-10" />
-                  {KANBAN_STATUSES.map((s) => (
+                  {['Intake', 'Assessment', 'Structural Repair', 'Finishing', 'Complete'].map((s) => (
                     <button
                       key={s}
-                      onClick={() => updateStatus(selectedProject.id!, s)}
+                      onClick={() => updateStatus(selectedProject.id!, s as any)}
                       className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
                         selectedProject.status === s 
                           ? 'bg-accent text-white scale-125 shadow-lg' 
