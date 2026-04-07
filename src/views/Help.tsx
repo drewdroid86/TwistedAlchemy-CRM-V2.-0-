@@ -12,31 +12,14 @@ import {
   MessageSquare,
   Sparkles,
   Send,
-  Loader2,
-  LucideIcon
+  Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { GoogleGenAI } from "@google/genai";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-interface TutorialStep {
-  title: string;
-  desc: string;
-  action: string;
-}
-
-interface TutorialSection {
-  id: string;
-  title: string;
-  icon: LucideIcon;
-  content: string;
-  isWalkthrough?: boolean;
-  steps?: TutorialStep[];
-  tips?: string[];
-}
-
-const TUTORIAL_SECTIONS: TutorialSection[] = [
+const TUTORIAL_SECTIONS = [
   {
     id: 'walkthrough',
     title: 'Workflow: From Intake to Sale',
@@ -111,7 +94,7 @@ const TUTORIAL_SECTIONS: TutorialSection[] = [
 ];
 
 export default function Help() {
-  const [selectedSection, setSelectedSection] = useState<TutorialSection>(TUTORIAL_SECTIONS[0]);
+  const [selectedSection, setSelectedSection] = useState(TUTORIAL_SECTIONS[0]);
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
   const [isAsking, setIsAsking] = useState(false);
@@ -224,9 +207,9 @@ Never say "I don't know" — give your best practical answer and note if you're 
                 </p>
 
                 {/* Walkthrough Steps */}
-                {selectedSection.isWalkthrough ? (
+                {(selectedSection as any).isWalkthrough ? (
                   <div className="space-y-4 mt-8">
-                    {selectedSection.steps?.map((step, i) => (
+                    {(selectedSection as any).steps.map((step: any, i: number) => (
                       <motion.div 
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -255,7 +238,7 @@ Never say "I don't know" — give your best practical answer and note if you're 
                       <Sparkles size={14} /> Pro Tips
                     </h4>
                     <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {selectedSection.tips?.map((tip, i) => (
+                      {selectedSection.tips.map((tip, i) => (
                         <li key={i} className="bg-stone-50 p-4 rounded-2xl text-sm text-stone-700 border border-stone-100 flex gap-3">
                           <div className="w-5 h-5 bg-olive-accent text-white rounded-full flex-none flex items-center justify-center text-[10px] font-bold">
                             {i + 1}

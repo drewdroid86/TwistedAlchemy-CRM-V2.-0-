@@ -17,7 +17,6 @@ export interface InventoryItem {
   name: string;
   quantity: number;
   acquisition_cost: number;
-  total_value?: number; // acquisition_cost * quantity
   current_condition?: number; // 1-10
   location: string;
   imageUrl?: string;

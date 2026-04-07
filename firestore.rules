@@ -48,15 +48,6 @@ service cloud.firestore {
       return !request.resource.data.diff(resource.data).affectedKeys().hasAny(fields);
     }
 
-    function isValidPurchaseOrder(data) {
-      return data.brand in ['Twisted Twig', 'Wood Grain Alchemist'] &&
-             data.vendor is string && data.vendor.size() > 0 && data.vendor.size() < 100 &&
-             data.status in ['Draft', 'Ordered', 'Received', 'Cancelled'] &&
-             data.total_amount is number && data.total_amount >= 0 &&
-             data.items is list &&
-             (!('receipt_url' in data) || isValidUrl(data.receipt_url));
-    }
-
     // ===============================================================
     // Rules
     // ===============================================================

@@ -1,6 +1,6 @@
-import { collection, getDocs, query, where, getAggregateFromServer, sum, getCountFromServer } from 'firebase/firestore';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from './firebaseService';
-import { InventoryItem, Project, Customer, Brand } from '../types';
+import { InventoryItem, Project, Customer } from '../types';
 
 export interface InventoryValueByOwner {
   owner: string;
@@ -29,24 +29,25 @@ export interface TopCustomer {
  */
 export const getInventoryValueByOwner = async (): Promise<InventoryValueByOwner[]> => {
   const inventoryRef = collection(db, 'inventory');
+  const snapshot = await getDocs(inventoryRef);
   
-  // To avoid hardcoding, we first fetch all docs just once to get unique owners
-  // BUT the goal is optimization. If we fetch all docs, we lose the benefit.
-  // Standard brands in this app are 'Twisted Twig' and 'Wood Grain Alchemist'.
-  const brands: Brand[] = ['Twisted Twig', 'Wood Grain Alchemist'];
+  const valueMap: Record<string, number> = {};
   
-  const results = await Promise.all(brands.map(async (brand) => {
-    const q = query(inventoryRef, where('owner', '==', brand));
-    const snapshot = await getAggregateFromServer(q, {
-      totalValue: sum('total_value')
-    });
-    return {
-      owner: brand,
-      value: snapshot.data().totalValue || 0
-    };
+  snapshot.forEach(doc => {
+    const item = doc.data() as InventoryItem;
+    const owner = item.owner || 'Unknown';
+    const value = (item.acquisition_cost || 0) * (item.quantity || 1);
+    
+    if (!valueMap[owner]) {
+      valueMap[owner] = 0;
+    }
+    valueMap[owner] += value;
+  });
+  
+  return Object.keys(valueMap).map(owner => ({
+    owner,
+    value: valueMap[owner]
   }));
-
-  return results;
 };
 
 /**
@@ -55,26 +56,29 @@ export const getInventoryValueByOwner = async (): Promise<InventoryValueByOwner[
  */
 export const getProjectCountByStatusAndBrand = async (): Promise<ProjectCountByStatusAndBrand[]> => {
   const projectsRef = collection(db, 'projects');
+  const snapshot = await getDocs(projectsRef);
   
-  // These are defined in src/types.ts and src/views/Projects.tsx (KANBAN_STATUSES)
-  const statuses = ['Intake', 'Assessment', 'Structural Repair', 'Finishing', 'Complete'];
-  const brands: Brand[] = ['Twisted Twig', 'Wood Grain Alchemist'];
+  const statusMap: Record<string, { 'Twisted Twig': number; 'Wood Grain Alchemist': number }> = {};
   
-  const results = await Promise.all(statuses.map(async (status) => {
-    const counts = await Promise.all(brands.map(async (brand) => {
-      const q = query(projectsRef, where('status', '==', status), where('brand', '==', brand));
-      const snapshot = await getCountFromServer(q);
-      return { brand, count: snapshot.data().count };
-    }));
-
-    return {
-      status,
-      'Twisted Twig': counts.find(c => c.brand === 'Twisted Twig')?.count || 0,
-      'Wood Grain Alchemist': counts.find(c => c.brand === 'Wood Grain Alchemist')?.count || 0
-    };
+  snapshot.forEach(doc => {
+    const project = doc.data() as Project;
+    const status = project.status || 'Unknown';
+    const brand = project.brand as 'Twisted Twig' | 'Wood Grain Alchemist';
+    
+    if (!statusMap[status]) {
+      statusMap[status] = { 'Twisted Twig': 0, 'Wood Grain Alchemist': 0 };
+    }
+    
+    if (brand === 'Twisted Twig' || brand === 'Wood Grain Alchemist') {
+      statusMap[status][brand] += 1;
+    }
+  });
+  
+  return Object.keys(statusMap).map(status => ({
+    status,
+    'Twisted Twig': statusMap[status]['Twisted Twig'],
+    'Wood Grain Alchemist': statusMap[status]['Wood Grain Alchemist']
   }));
-
-  return results;
 };
 
 /**
@@ -84,34 +88,42 @@ export const getProjectCountByStatusAndBrand = async (): Promise<ProjectCountByS
 export const getRevenueThisMonthVsLastMonth = async (): Promise<RevenueComparison[]> => {
   const projectsRef = collection(db, 'projects');
   
-  const now = new Date();
-  const firstDayThisMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-  const firstDayLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
+  // We only care about completed projects
+  const q = query(projectsRef, where('status', '==', 'Complete'));
+  const snapshot = await getDocs(q);
   
-  // Fetch This Month's Revenue
-  const thisMonthQuery = query(
-    projectsRef,
-    where('status', '==', 'Complete'),
-    where('completedAt', '>=', firstDayThisMonth)
-  );
-  const thisMonthSnapshot = await getAggregateFromServer(thisMonthQuery, {
-    totalRevenue: sum('financials.actual_sale_price')
-  });
-
-  // Fetch Last Month's Revenue
-  const lastMonthQuery = query(
-    projectsRef,
-    where('status', '==', 'Complete'),
-    where('completedAt', '>=', firstDayLastMonth),
-    where('completedAt', '<', firstDayThisMonth)
-  );
-  const lastMonthSnapshot = await getAggregateFromServer(lastMonthQuery, {
-    totalRevenue: sum('financials.actual_sale_price')
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+  
+  let lastMonth = currentMonth - 1;
+  let lastMonthYear = currentYear;
+  if (lastMonth < 0) {
+    lastMonth = 11;
+    lastMonthYear -= 1;
+  }
+  
+  let thisMonthRevenue = 0;
+  let lastMonthRevenue = 0;
+  
+  snapshot.forEach(doc => {
+    const project = doc.data() as Project;
+    const dateToUse = project.completedAt || project.updatedAt;
+    if (!dateToUse) return;
+    
+    const completedDate = new Date(dateToUse);
+    const revenue = project.financials?.actual_sale_price || 0;
+    
+    if (completedDate.getMonth() === currentMonth && completedDate.getFullYear() === currentYear) {
+      thisMonthRevenue += revenue;
+    } else if (completedDate.getMonth() === lastMonth && completedDate.getFullYear() === lastMonthYear) {
+      lastMonthRevenue += revenue;
+    }
   });
   
   return [
-    { period: 'Last Month', revenue: lastMonthSnapshot.data().totalRevenue || 0 },
-    { period: 'This Month', revenue: thisMonthSnapshot.data().totalRevenue || 0 }
+    { period: 'Last Month', revenue: lastMonthRevenue },
+    { period: 'This Month', revenue: thisMonthRevenue }
   ];
 };
 

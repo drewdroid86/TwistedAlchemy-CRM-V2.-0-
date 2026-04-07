@@ -81,7 +81,7 @@ export default function Purchasing() {
           vendor: extractedData.vendor || '',
           date: extractedData.date || new Date().toISOString().split('T')[0],
           total_amount: extractedData.total || 0,
-          items: (extractedData.line_items || []).map((item: { description?: string; amount?: number }) => ({
+          items: (extractedData.line_items || []).map((item: any) => ({
             description: item.description || '',
             quantity: 1,
             unit_price: item.amount || 0
@@ -254,7 +254,7 @@ export default function Purchasing() {
                     <select 
                       className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 focus:outline-none"
                       value={newPO.status}
-                      onChange={(e) => setNewPO({...newPO, status: e.target.value as PurchaseOrder['status']})}
+                      onChange={(e) => setNewPO({...newPO, status: e.target.value as any})}
                     >
                       <option value="Draft">Draft</option>
                       <option value="Ordered">Ordered</option>
