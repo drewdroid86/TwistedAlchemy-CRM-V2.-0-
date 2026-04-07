@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { subscribeToCollection, createDocument, deleteDocument } from '../services/firebaseService';
+import { 
+  getInventoryValueByOwner, 
+  getProjectCountByStatusAndBrand, 
+  getRevenueThisMonthVsLastMonth, 
+  getTop5Customers 
+} from '../services/analyticsService';
 import { Project, InventoryItem, ShopNote } from '../types';
 import { 
   TrendingUp, 
@@ -15,20 +21,52 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { auth } from '../firebase';
+import { 
+  PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+} from 'recharts';
 
 export default function Dashboard() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [notes, setNotes] = useState<ShopNote[]>([]);
   const [newNote, setNewNote] = useState('');
+  
+  // Analytics State
+  const [inventoryValue, setInventoryValue] = useState<any[]>([]);
+  const [projectCounts, setProjectCounts] = useState<any[]>([]);
+  const [revenueComparison, setRevenueComparison] = useState<any[]>([]);
+  const [topCustomers, setTopCustomers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubProjects = subscribeToCollection<Project>('projects', setProjects);
     const unsubInventory = subscribeToCollection<InventoryItem>('inventory', setInventory);
     const unsubNotes = subscribeToCollection<ShopNote>('shop_notes', (data) => {
-      // Sort notes by newest first
       setNotes(data.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
     });
+
+    const fetchAnalytics = async () => {
+      try {
+        setLoading(true);
+        const [inv, proj, rev, cust] = await Promise.all([
+          getInventoryValueByOwner(),
+          getProjectCountByStatusAndBrand(),
+          getRevenueThisMonthVsLastMonth(),
+          getTop5Customers()
+        ]);
+        setInventoryValue(inv);
+        setProjectCounts(proj);
+        setRevenueComparison(rev);
+        setTopCustomers(cust);
+      } catch (err) {
+        setError('Failed to load analytics data.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAnalytics();
+
     return () => {
       unsubProjects();
       unsubInventory();
@@ -45,9 +83,9 @@ export default function Dashboard() {
   const lowStock = inventory.filter(i => i.quantity < 5);
 
   const stats = [
-    { label: 'Active Projects', value: activeProjects.length, icon: Hammer, color: 'bg-stone-100 text-stone-600' },
-    { label: 'WIP Value', value: `$${totalWIPValue.toLocaleString()}`, icon: TrendingUp, color: 'bg-olive-accent/10 text-olive-accent' },
-    { label: 'Total Revenue', value: `$${totalRevenue.toLocaleString()}`, icon: DollarSign, color: 'bg-stone-100 text-stone-600' },
+    { label: 'Active Projects', value: activeProjects.length, icon: Hammer, color: 'bg-app-bg text-text-secondary' },
+    { label: 'WIP Value', value: `$${totalWIPValue.toLocaleString()}`, icon: TrendingUp, color: 'bg-blue-50 text-accent' },
+    { label: 'Total Revenue', value: `$${totalRevenue.toLocaleString()}`, icon: DollarSign, color: 'bg-app-bg text-text-secondary' },
     { label: 'Low Stock Items', value: lowStock.length, icon: AlertCircle, color: 'bg-red-50 text-red-600' },
   ];
 
@@ -71,8 +109,8 @@ export default function Dashboard() {
     <div className="space-y-8">
       {/* Welcome Header */}
       <div>
-        <h2 className="text-3xl font-serif italic font-bold text-stone-900">Shop Floor Overview</h2>
-        <p className="text-stone-500 mt-1">Here's what's happening across both brands today.</p>
+        <h2 className="text-3xl font-serif italic font-bold text-slate-900">Shop Floor Overview</h2>
+        <p className="text-slate-600 mt-1">Here's what's happening across both brands today.</p>
       </div>
 
       {/* Stats Grid */}
@@ -90,17 +128,87 @@ export default function Dashboard() {
                 <stat.icon size={24} />
               </div>
             </div>
-            <p className="text-stone-500 text-sm font-medium">{stat.label}</p>
-            <h3 className="text-2xl font-bold text-stone-900 mt-1">{stat.value}</h3>
+            <p className="text-slate-500 text-sm font-medium">{stat.label}</p>
+            <h3 className="text-2xl font-bold text-slate-900 mt-1">{stat.value}</h3>
           </motion.div>
         ))}
+      </div>
+
+      {/* Analytics Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Inventory Value by Owner (Pie) */}
+        <div className="card-refined p-6">
+          <h3 className="text-lg font-serif italic font-bold text-stone-900 mb-6">Inventory Value by Owner</h3>
+          {loading ? <div className="h-64 flex items-center justify-center">Loading...</div> : error ? <div className="h-64 flex items-center justify-center text-red-500">{error}</div> : (
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie data={inventoryValue} dataKey="value" nameKey="owner" cx="50%" cy="50%" outerRadius={80} fill="#2563eb" label>
+                  {inventoryValue.map((_, index) => <Cell key={`cell-${index}`} fill={index % 2 === 0 ? '#2563eb' : '#64748b'} />)}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+
+        {/* Project Count by Status/Brand (Stacked Bar) */}
+        <div className="card-refined p-6">
+          <h3 className="text-lg font-serif italic font-bold text-stone-900 mb-6">Project Count by Status & Brand</h3>
+          {loading ? <div className="h-64 flex items-center justify-center">Loading...</div> : error ? <div className="h-64 flex items-center justify-center text-red-500">{error}</div> : (
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={projectCounts}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="status" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="Twisted Twig" stackId="a" fill="#2563eb" />
+                <Bar dataKey="Wood Grain Alchemist" stackId="a" fill="#64748b" />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+
+        {/* Revenue Comparison (Grouped Bar) */}
+        <div className="card-refined p-6">
+          <h3 className="text-lg font-serif italic font-bold text-stone-900 mb-6">Revenue: This Month vs Last Month</h3>
+          {loading ? <div className="h-64 flex items-center justify-center">Loading...</div> : error ? <div className="h-64 flex items-center justify-center text-red-500">{error}</div> : (
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={revenueComparison}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="period" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="revenue" fill="#2563eb" />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+
+        {/* Top 5 Customers (Horizontal Bar) */}
+        <div className="card-refined p-6">
+          <h3 className="text-lg font-serif italic font-bold text-stone-900 mb-6">Top 5 Customers</h3>
+          {loading ? <div className="h-64 flex items-center justify-center">Loading...</div> : error ? <div className="h-64 flex items-center justify-center text-red-500">{error}</div> : (
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={topCustomers} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis type="number" />
+                <YAxis dataKey="name" type="category" width={100} />
+                <Tooltip />
+                <Bar dataKey="purchases" fill="#64748b" />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Shop Notes (Communication Hub) */}
         <div className="lg:col-span-1 card-refined flex flex-col h-[500px] overflow-hidden">
-          <div className="p-6 border-b border-stone-100 flex items-center gap-2 bg-stone-50">
-            <MessageSquare size={20} className="text-stone-400" />
+          <div className="p-6 border-b border-slate-100 flex items-center gap-2 bg-slate-50">
+            <MessageSquare size={20} className="text-slate-500" />
             <h3 className="text-lg font-serif italic font-bold text-stone-900">Shop Notes</h3>
           </div>
           
@@ -112,7 +220,7 @@ export default function Dashboard() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95 }}
-                  className="bg-stone-50 p-4 rounded-2xl border border-stone-100 group relative"
+                  className="bg-slate-50 p-4 rounded-2xl border border-slate-100 group relative"
                 >
                   <p className="text-sm text-stone-800 mb-2">{note.text}</p>
                   <div className="flex justify-between items-center text-[10px] text-stone-400 font-bold uppercase tracking-wider">
@@ -147,7 +255,7 @@ export default function Dashboard() {
               <button 
                 type="submit"
                 disabled={!newNote.trim()}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-olive-accent text-white rounded-lg hover:opacity-90 disabled:opacity-50 transition-colors"
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-accent text-white rounded-lg hover:opacity-90 disabled:opacity-50 transition-colors"
               >
                 <Send size={14} />
               </button>

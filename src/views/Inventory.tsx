@@ -31,7 +31,13 @@ export default function Inventory() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    await createDocument('inventory', newItem);
+    const inventoryNumber = `INV-${Math.floor(100000 + Math.random() * 900000)}`;
+    await createDocument('inventory', { 
+      ...newItem, 
+      inventoryNumber, 
+      createdAt: new Date().toISOString(), 
+      updatedAt: new Date().toISOString() 
+    });
     setIsModalOpen(false);
     setNewItem({
       owner: 'Twisted Twig',
@@ -53,18 +59,18 @@ export default function Inventory() {
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center card-refined p-4">
         <div className="relative flex-1 w-full">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" size={18} />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary" size={18} />
           <input
             type="text"
             placeholder="Search inventory..."
-            className="w-full pl-10 pr-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-stone-900/10 transition-all"
+            className="w-full pl-10 pr-4 py-2 bg-app-bg border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent/20 transition-all"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
         <div className="flex gap-3 w-full sm:w-auto">
           <select
-            className="bg-stone-50 border border-stone-200 rounded-xl px-4 py-2 text-sm focus:outline-none"
+            className="bg-app-bg border border-border rounded-lg px-4 py-2 text-sm focus:outline-none"
             value={filterBrand}
             onChange={(e) => setFilterBrand(e.target.value as Brand | 'All')}
           >
@@ -74,7 +80,7 @@ export default function Inventory() {
           </select>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 bg-olive-accent text-white px-4 py-2 rounded-xl text-sm font-semibold hover:opacity-90 transition-all"
+            className="btn-primary flex items-center gap-2"
           >
             <Plus size={18} /> Add Item
           </button>
@@ -104,7 +110,7 @@ export default function Inventory() {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
               ) : (
-                <div className="h-48 bg-stone-100 flex items-center justify-center text-stone-300">
+                <div className="h-48 bg-slate-100 flex items-center justify-center text-slate-400">
                   <Package size={48} />
                 </div>
               )}
@@ -116,21 +122,21 @@ export default function Inventory() {
                     {item.owner}
                   </div>
                   <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button className="p-1.5 hover:bg-stone-100 rounded-lg text-stone-400 hover:text-stone-900">
+                    <button className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-900">
                       <Edit2 size={14} />
                     </button>
                     <button 
                       onClick={() => handleDelete(item.id!)}
-                      className="p-1.5 hover:bg-red-50 rounded-lg text-stone-400 hover:text-red-600"
+                      className="p-1.5 hover:bg-red-50 rounded-lg text-slate-400 hover:text-red-600"
                     >
                       <Trash2 size={14} />
                     </button>
                   </div>
                 </div>
                 <h3 className="text-lg font-bold text-stone-900 mb-1">{item.name}</h3>
-                <p className="text-sm text-stone-500 mb-4">{item.type}</p>
+                <p className="text-sm text-slate-600 mb-4">{item.type}</p>
                 
-                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-stone-100">
+                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-100">
                   <div>
                     <p className="text-[10px] text-stone-400 uppercase font-bold mb-1">Quantity</p>
                     <p className="text-sm font-semibold text-stone-900 flex items-center gap-1">
@@ -148,7 +154,7 @@ export default function Inventory() {
                     <p className="text-[10px] text-stone-400 uppercase font-bold mb-1">Condition</p>
                     <div className="w-full bg-stone-100 h-1.5 rounded-full overflow-hidden">
                       <div 
-                        className="bg-olive-accent h-full rounded-full" 
+                        className="bg-accent h-full rounded-full" 
                         style={{ width: `${item.current_condition * 10}%` }}
                       />
                     </div>
@@ -168,7 +174,7 @@ export default function Inventory() {
             animate={{ opacity: 1, scale: 1 }}
             className="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden"
           >
-            <div className="p-6 border-b border-stone-100 flex justify-between items-center">
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center">
               <h3 className="text-xl font-serif italic font-bold text-stone-900">Add Inventory Item</h3>
               <button onClick={() => setIsModalOpen(false)} className="text-stone-400 hover:text-stone-900">
                 <X size={24} />
@@ -179,7 +185,7 @@ export default function Inventory() {
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-stone-500 uppercase">Owner</label>
                   <select 
-                    className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-2 focus:outline-none"
+                    className="w-full bg-slate-50 border border-stone-200 rounded-xl px-4 py-2 focus:outline-none"
                     value={newItem.owner}
                     onChange={(e) => setNewItem({...newItem, owner: e.target.value as Brand})}
                   >

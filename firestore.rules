@@ -2,63 +2,29 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     // ===============================================================
-    // Assumed Data Model
-    // ===============================================================
-    // Collection: inventory
-    // Fields: owner, type, name, quantity, acquisition_cost, current_condition, location, imageUrl, createdAt, updatedAt
-    //
-    // Collection: projects
-    // Fields: brand, client_id, status, assigned_to, financials, work_log, images, createdAt, updatedAt
-    //
-    // Collection: customers
-    // Fields: name, contact, purchase_history
+    // Data Model & Helper Functions
     // ===============================================================
 
-    // ===============================================================
-    // Helper Functions
-    // ===============================================================
+    // Helper to check if a user is authenticated
     function isAuthenticated() {
       return request.auth != null;
     }
 
-    function isEmailVerified() {
-      return request.auth.token.email_verified == true;
-    }
-
+    // Helper to check if a user has the 'admin' role
+    // This requires a 'users' collection where each document ID is a user's UID
+    // and contains a 'role' field.
     function isAdmin() {
-      return isAuthenticated() &&
-        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
-          (request.auth.token.email == "jdrew2517@gmail.com" && isEmailVerified()));
+      return isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    function isValidUrl(url) {
-      return url is string && (url.matches("^https://.*") || url.matches("^http://.*"));
+    // Helper to check for required fields on document creation
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
     }
 
-    function isValidInventory(data) {
-      return data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
-             data.owner in ['Twisted Twig', 'Wood Grain Alchemist'] &&
-             data.quantity is number && data.quantity >= 0 &&
-             data.acquisition_cost is number && data.acquisition_cost >= 0 &&
-             (!('imageUrl' in data) || isValidUrl(data.imageUrl));
-    }
-
-    function isValidProject(data) {
-      return data.brand in ['Twisted Twig', 'Wood Grain Alchemist'] &&
-             data.status in ['Intake', 'Assessment', 'Structural Repair', 'Finishing', 'Complete'] &&
-             data.financials.item_cost is number && data.financials.item_cost >= 0 &&
-             data.financials.supplies_cost is number && data.financials.supplies_cost >= 0 &&
-             data.financials.target_sale_price is number && data.financials.target_sale_price >= 0 &&
-             (!('labor_hours' in data.financials) || (data.financials.labor_hours is number && data.financials.labor_hours >= 0)) &&
-             (!('hourly_rate' in data.financials) || (data.financials.hourly_rate is number && data.financials.hourly_rate >= 0)) &&
-             (!('pricing_strategy' in data.financials) || (data.financials.pricing_strategy in ['Cost Plus', 'Competitive', 'Market Share', 'Value Added', 'Project Based', 'Bundle', 'None'])) &&
-             (!('actual_sale_price' in data.financials) || (data.financials.actual_sale_price is number && data.financials.actual_sale_price >= 0)) &&
-             (!('images' in data) || (data.images is list && data.images.size() <= 10));
-    }
-
-    function isValidCustomer(data) {
-      return data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
-             data.contact is string && data.contact.size() > 0 && data.contact.size() < 200;
+    // Helper to prevent modification of immutable fields on update
+    function areImmutableFieldsUnchanged(fields) {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(fields);
     }
 
     // ===============================================================
@@ -67,49 +33,46 @@ service cloud.firestore {
 
     // Users collection for RBAC
     match /users/{userId} {
-      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
-      allow create: if isAuthenticated() && request.auth.uid == userId && request.resource.data.role == 'user';
+      // Admins can read any user profile. Regular users can only read their own.
+      allow read: if isAdmin() || request.auth.uid == userId;
+      // Users can create their own user document. Only admins can update roles.
+      allow create: if request.auth.uid == userId;
       allow update: if isAdmin();
-    }
-
-    // Inventory
-    match /inventory/{itemId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && isValidInventory(request.resource.data);
-      allow update: if isAuthenticated() && isValidInventory(request.resource.data);
-      allow delete: if isAdmin();
     }
 
     // Projects
     match /projects/{projectId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && isValidProject(request.resource.data);
-      allow update: if isAuthenticated() && isValidProject(request.resource.data);
+      // Allow create/update for any authenticated user for now, but enforce schema.
+      allow create: if isAuthenticated() && hasRequiredFields(['brand', 'title', 'description', 'status', 'assigned_to', 'createdAt', 'updatedAt']);
+      allow update: if isAuthenticated() && areImmutableFieldsUnchanged(['createdAt']);
+      // Only admins can delete projects
       allow delete: if isAdmin();
-    }
-
-    // Customers
-    match /customers/{customerId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && isValidCustomer(request.resource.data);
-      allow update: if isAuthenticated() && isValidCustomer(request.resource.data);
-      allow delete: if isAdmin();
-    }
-
-    // Shop Notes
-    match /shop_notes/{noteId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && request.resource.data.text is string && request.resource.data.text.size() > 0 && request.resource.data.text.size() < 1000;
-      allow update: if isAuthenticated() && request.resource.data.text is string && request.resource.data.text.size() > 0 && request.resource.data.text.size() < 1000;
-      allow delete: if isAuthenticated();
     }
 
     // Purchase Orders
     match /purchase_orders/{poId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated();
+      allow create: if isAuthenticated() && hasRequiredFields(['brand', 'vendor', 'date', 'total_amount', 'status', 'createdAt']);
+      allow update: if isAuthenticated() && areImmutableFieldsUnchanged(['createdAt']);
+      // Only admins can delete purchase orders
       allow delete: if isAdmin();
+    }
+
+    // Inventory, Customers, and Shop Notes - Read for users, Write for Admins
+    match /inventory/{itemId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin(); // Includes create, update, delete
+    }
+
+    match /customers/{customerId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /shop_notes/{noteId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
     }
   }
 }

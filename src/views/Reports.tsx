@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { subscribeToCollection } from '../services/firebaseService';
-import { Project, InventoryItem, Customer, Brand } from '../types';
+import { Project, InventoryItem, Customer } from '../types';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  PieChart, Pie, Cell, LineChart, Line
+  PieChart, Pie, Cell
 } from 'recharts';
 import { 
   FileText, 
@@ -12,7 +12,6 @@ import {
   Package, 
   Users, 
   Hammer,
-  ChevronDown,
   Printer
 } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -23,7 +22,7 @@ export default function Reports() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [activeReport, setActiveReport] = useState<'sales' | 'inventory' | 'projects' | 'customers'>('sales');
+  const [activeReport, setActiveReport] = useState<'sales' | 'inventory' | 'projects' | 'customers' | 'loanOfficer'>('loanOfficer');
 
   useEffect(() => {
     const unsubProjects = subscribeToCollection<Project>('projects', setProjects);
@@ -50,6 +49,13 @@ export default function Reports() {
     return acc;
   }, {});
   const salesData = Object.values(salesByMonth);
+
+  // Loan Officer Summary Data
+  const totalRevenue = completedProjects.reduce((acc, p) => acc + (p.financials.actual_sale_price || 0), 0);
+  const totalCost = completedProjects.reduce((acc, p) => acc + (p.financials.item_cost || 0) + (p.financials.supplies_cost || 0), 0);
+  const totalProfit = totalRevenue - totalCost;
+  const inventoryValue = inventory.reduce((acc, item) => acc + (item.acquisition_cost * item.quantity), 0);
+  const activeProjectCount = projects.filter(p => p.status !== 'Complete').length;
 
   // 2. Inventory Report Data
   const inventoryByBrand = inventory.reduce((acc: any, item) => {
@@ -123,6 +129,7 @@ export default function Reports() {
       {/* Report Navigation */}
       <div className="flex gap-4 border-b border-stone-200 print:hidden">
         {[
+          { id: 'loanOfficer', label: 'Loan Officer Summary', icon: FileText },
           { id: 'sales', label: 'Sales & Profit', icon: TrendingUp },
           { id: 'inventory', label: 'Inventory Health', icon: Package },
           { id: 'projects', label: 'Project Flow', icon: Hammer },
@@ -149,6 +156,32 @@ export default function Reports() {
 
       {/* Report Content */}
       <div className="grid grid-cols-1 gap-8">
+        {activeReport === 'loanOfficer' && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="card-refined p-6">
+                <p className="text-stone-500 text-sm font-bold uppercase tracking-wider">Total Revenue</p>
+                <p className="text-3xl font-bold text-stone-900 mt-2">${totalRevenue.toLocaleString()}</p>
+              </div>
+              <div className="card-refined p-6">
+                <p className="text-stone-500 text-sm font-bold uppercase tracking-wider">Net Profit</p>
+                <p className="text-3xl font-bold text-stone-900 mt-2">${totalProfit.toLocaleString()}</p>
+              </div>
+              <div className="card-refined p-6">
+                <p className="text-stone-500 text-sm font-bold uppercase tracking-wider">Inventory Value</p>
+                <p className="text-3xl font-bold text-stone-900 mt-2">${inventoryValue.toLocaleString()}</p>
+              </div>
+              <div className="card-refined p-6">
+                <p className="text-stone-500 text-sm font-bold uppercase tracking-wider">Active Projects</p>
+                <p className="text-3xl font-bold text-stone-900 mt-2">{activeProjectCount}</p>
+              </div>
+            </div>
+            <div className="card-refined p-8">
+              <h3 className="text-lg font-serif italic font-bold text-stone-900 mb-6">Financial Overview</h3>
+              <p className="text-stone-500">This summary provides a high-level overview of the business performance, suitable for loan applications or financial reviews.</p>
+            </div>
+          </motion.div>
+        )}
         {activeReport === 'sales' && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
