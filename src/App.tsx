@@ -19,7 +19,8 @@ import {
   X,
   FileText,
   ShoppingCart,
-  HelpCircle
+  HelpCircle,
+  AlertCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -39,6 +40,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [activeView, setActiveView] = useState<View>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [loginError, setLoginError] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -49,11 +51,13 @@ export default function App() {
   }, []);
 
   const handleLogin = async () => {
+    setLoginError(null);
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
     } catch (error) {
       console.error('Login failed', error);
+      setLoginError('Authentication failed. Please try again.');
     }
   };
 
@@ -86,6 +90,18 @@ export default function App() {
           <p className="text-text-secondary mb-8">
             Management System
           </p>
+
+          {loginError && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              className="mb-6 p-4 bg-red-50 border border-red-100 rounded-xl flex items-center gap-3 text-red-600 text-sm font-medium"
+            >
+              <AlertCircle size={18} />
+              {loginError}
+            </motion.div>
+          )}
+
           <button
             onClick={handleLogin}
             className="w-full flex items-center justify-center gap-3 py-3 bg-accent text-white rounded-lg font-medium hover:bg-blue-700 transition-all shadow-sm"
