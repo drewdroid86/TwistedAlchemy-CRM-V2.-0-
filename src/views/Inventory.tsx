@@ -32,9 +32,11 @@ export default function Inventory() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     const inventoryNumber = `INV-${Math.floor(100000 + Math.random() * 900000)}`;
+    const total_value = (newItem.acquisition_cost || 0) * (newItem.quantity || 0);
     await createDocument('inventory', { 
       ...newItem, 
       inventoryNumber, 
+      total_value,
       createdAt: new Date().toISOString(), 
       updatedAt: new Date().toISOString() 
     });
@@ -198,7 +200,7 @@ export default function Inventory() {
                   <select 
                     className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-2 focus:outline-none"
                     value={newItem.type}
-                    onChange={(e) => setNewItem({...newItem, type: e.target.value as any})}
+                    onChange={(e) => setNewItem({...newItem, type: e.target.value as InventoryItem['type']})}
                   >
                     <option value="Furniture Piece">Furniture Piece</option>
                     <option value="Raw Material">Raw Material</option>
@@ -262,7 +264,7 @@ export default function Inventory() {
                     max="10"
                     className="w-full accent-stone-900"
                     value={newItem.current_condition || 5}
-                    onChange={(e) => setNewItem({...newItem, current_condition: parseInt(e.target.value, 10)})}
+                    onChange={(e) => setNewItem({...newItem, current_condition: parseInt(e.target.value)})}
                   />
                   <div className="flex justify-between text-[10px] text-stone-400 font-bold">
                     <span>POOR</span>

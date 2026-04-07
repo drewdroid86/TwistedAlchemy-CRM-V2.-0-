@@ -18,13 +18,20 @@ import {
 import { motion } from 'motion/react';
 
 type ReportType = 'pnl' | 'balanceSheet' | 'digitize';
+type ReportTab = 'pnl' | 'balanceSheet' | 'digitize';
+
+const TAB_CONFIG: Record<ReportTab, { label: string; icon: React.ElementType }> = {
+  pnl: { label: 'Profit & Loss', icon: TrendingUp },
+  balanceSheet: { label: 'Balance Sheet', icon: Scale },
+  digitize: { label: 'Digitize Records', icon: History },
+};
 
 export default function Financials() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
-  const [activeReport, setActiveReport] = useState<ReportType>('pnl');
+  const [activeReport, setActiveReport] = useState<ReportTab>('pnl');
 
   const [filterMonth, setFilterMonth] = useState<number>(new Date().getMonth());
   const [filterYear, setFilterYear] = useState<number>(new Date().getFullYear());
