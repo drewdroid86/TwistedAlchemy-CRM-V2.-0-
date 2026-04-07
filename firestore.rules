@@ -2,48 +2,27 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     // ===============================================================
-    // Assumed Data Model
-    // ===============================================================
-    //
-    // Collection: projects
-    // Document ID: {projectId}
-    // Fields:
-    //   - brand: string (required)
-    //   - title: string (required)
-    //   - description: string (required)
-    //   - status: string (required)
-    //   - assigned_to: string (required)
-    //   - createdAt: string (required, immutable)
-    //   - updatedAt: string (required)
-    //   - completedAt: string (optional)
-    //
-    // Collection: purchase_orders
-    // Document ID: {poId}
-    // Fields:
-    //   - brand: string (required)
-    //   - vendor: string (required)
-    //   - date: string (required)
-    //   - total_amount: number (required)
-    //   - status: string (required)
-    //   - createdAt: string (required, immutable)
-    //
+    // Data Model & Helper Functions
     // ===============================================================
 
-    // ===============================================================
-    // Helper Functions
-    // ===============================================================
+    // Helper to check if a user is authenticated
     function isAuthenticated() {
       return request.auth != null;
     }
 
+    // Helper to check if a user has the 'admin' role
+    // This requires a 'users' collection where each document ID is a user's UID
+    // and contains a 'role' field.
+    function isAdmin() {
+      return isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Helper to check for required fields on document creation
     function hasRequiredFields(fields) {
       return request.resource.data.keys().hasAll(fields);
     }
 
-    function hasOnlyAllowedFields(fields) {
-      return request.resource.data.keys().hasOnly(fields);
-    }
-
+    // Helper to prevent modification of immutable fields on update
     function areImmutableFieldsUnchanged(fields) {
       return !request.resource.data.diff(resource.data).affectedKeys().hasAny(fields);
     }
@@ -52,33 +31,48 @@ service cloud.firestore {
     // Rules
     // ===============================================================
 
-    match /projects/{projectId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && hasRequiredFields(['brand', 'title', 'description', 'status', 'assigned_to', 'createdAt', 'updatedAt']);
-      allow update: if isAuthenticated() && areImmutableFieldsUnchanged(['createdAt']);
-      allow delete: if isAuthenticated();
+    // Users collection for RBAC
+    match /users/{userId} {
+      // Admins can read any user profile. Regular users can only read their own.
+      allow read: if isAdmin() || request.auth.uid == userId;
+      // Users can create their own user document. Only admins can update roles.
+      allow create: if request.auth.uid == userId;
+      allow update: if isAdmin();
     }
 
+    // Projects
+    match /projects/{projectId} {
+      allow read: if isAuthenticated();
+      // Allow create/update for any authenticated user for now, but enforce schema.
+      allow create: if isAuthenticated() && hasRequiredFields(['brand', 'title', 'description', 'status', 'assigned_to', 'createdAt', 'updatedAt']);
+      allow update: if isAuthenticated() && areImmutableFieldsUnchanged(['createdAt']);
+      // Only admins can delete projects
+      allow delete: if isAdmin();
+    }
+
+    // Purchase Orders
     match /purchase_orders/{poId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated() && hasRequiredFields(['brand', 'vendor', 'date', 'total_amount', 'status', 'createdAt']);
       allow update: if isAuthenticated() && areImmutableFieldsUnchanged(['createdAt']);
-      allow delete: if isAuthenticated();
+      // Only admins can delete purchase orders
+      allow delete: if isAdmin();
     }
 
-    match /shop_notes/{noteId} {
-      allow read: if isAuthenticated();
-      allow write: if isAuthenticated();
-    }
-
+    // Inventory, Customers, and Shop Notes - Read for users, Write for Admins
     match /inventory/{itemId} {
       allow read: if isAuthenticated();
-      allow write: if isAuthenticated();
+      allow write: if isAdmin(); // Includes create, update, delete
     }
 
     match /customers/{customerId} {
       allow read: if isAuthenticated();
-      allow write: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /shop_notes/{noteId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
     }
   }
 }
